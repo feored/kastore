@@ -1,20 +1,7 @@
-use crate::version::SaveVersion;
+mod map_info;
+mod player;
+mod save_game;
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct SaveHeader {
-    pub requires_pol: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct MapInfo {
-    pub filename: String,
-    pub name: String,
-    pub description: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct SaveGame {
-    pub source_version: SaveVersion,
-    pub header: SaveHeader,
-    pub map_info: MapInfo,
-}
+pub use map_info::{Difficulty, MapInfo};
+pub use player::{MAX_PLAYERS, PlayerColor, PlayerColorsSet, Race};
+pub use save_game::{SaveGame, SaveHeader};

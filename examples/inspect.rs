@@ -15,7 +15,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("  map filename: {}", save_game.map_info.filename);
         println!("  map name: {}", save_game.map_info.name);
         println!("  description: {}", save_game.map_info.description);
-        println!();
+        println!("  width: {}", save_game.map_info.width);
+        println!("  height: {}", save_game.map_info.height);
+        println!("  difficulty: {:?}", save_game.map_info.difficulty);
+        println!("  kingdom colors: {}", save_game.map_info.kingdom_colors);
+        println!(
+            "  colors available for humans: {}",
+            save_game.map_info.colors_available_for_humans
+        );
+        println!(
+            "  colors available for computer: {}",
+            save_game.map_info.colors_available_for_comp
+        );
+        println!(
+            "  colors of random_races: {}",
+            save_game.map_info.colors_of_random_races
+        );
     }
 
     Ok(())

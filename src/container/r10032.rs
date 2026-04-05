@@ -1,6 +1,7 @@
 use super::{ContainerHeader, DecodedContainer};
 use crate::Error;
 use crate::internal::reader::Reader;
+use crate::model::{Difficulty, MapInfo, PlayerColorsSet};
 use crate::version::SaveVersion;
 
 pub(crate) const MAGIC_NUMBER: u16 = 0xFF03;
@@ -24,17 +25,30 @@ pub(crate) fn decode(bytes: &[u8]) -> std::result::Result<DecodedContainer, Erro
 
     let requires_pol = (reader.read_u16_be("flags")? & REQUIRES_POL) != 0;
 
-    let map_file_info = crate::container::MapFileInfo {
+    let map_info = MapInfo {
         filename: reader.read_string("map filename")?,
         name: reader.read_string("map name")?,
         description: reader.read_string("map description")?,
+        width: reader.read_u16_be("map width")?,
+        height: reader.read_u16_be("map height")?,
+        difficulty: Difficulty::from(reader.read_u8("map difficulty")?),
+        kingdom_colors: PlayerColorsSet::from_bits(reader.read_u8("kingdom colors")?),
+        colors_available_for_humans: PlayerColorsSet::from_bits(
+            reader.read_u8("colors available for humans")?,
+        ),
+        colors_available_for_comp: PlayerColorsSet::from_bits(
+            reader.read_u8("colors available for computer")?,
+        ),
+        colors_of_random_races: PlayerColorsSet::from_bits(
+            reader.read_u8("colors of random races")?,
+        ),
     };
 
     Ok(DecodedContainer {
         save_version,
         header: ContainerHeader {
             requires_pol,
-            map_file_info,
+            map_info,
         },
         payload: reader.remaining().to_vec(),
     })

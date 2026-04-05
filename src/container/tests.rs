@@ -25,12 +25,17 @@ fn decode_container_allows_mismatched_version_string() {
         0x00, 0x00, 0x00, 0x00, // filename length
         0x00, 0x00, 0x00, 0x00, // name length
         0x00, 0x00, 0x00, 0x00, // description length
+        0x00, 0x00, // width
+        0x00, 0x00, // height
+        0x00, // difficulty
     ];
 
     let container = decode_container(ContainerRevision::R10032, &bytes).unwrap();
 
     assert_eq!(container.save_version, SaveVersion::V10032);
     assert!(!container.header.requires_pol);
+    assert_eq!(container.header.map_info.width, 0);
+    assert_eq!(container.header.map_info.difficulty, crate::model::Difficulty::Easy);
 }
 
 #[test]
@@ -56,11 +61,13 @@ fn decode_container_parses_real_fixture_header() {
 
     assert_eq!(container.save_version, SaveVersion::V10032);
     assert!(container.header.requires_pol);
-    assert_eq!(container.header.map_file_info.filename, "GUARDWAR.MX2");
-    assert!(container.header.map_file_info.name.contains("Guardian"));
+    assert_eq!(container.header.map_info.filename, "GUARDWAR.MX2");
+    assert!(container.header.map_info.name.contains("Guardian"));
+    assert_eq!(container.header.map_info.width, 72);
+    assert_eq!(container.header.map_info.height, 72);
     assert!(container
         .header
-        .map_file_info
+        .map_info
         .description
         .starts_with("You and your ally's families"));
 }

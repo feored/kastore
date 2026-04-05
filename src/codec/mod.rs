@@ -1,4 +1,4 @@
-use crate::model::{MapInfo, SaveGame, SaveHeader};
+use crate::model::{SaveGame, SaveHeader};
 use crate::version::{profile_for, SaveVersion};
 use crate::Error;
 
@@ -39,11 +39,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
         header: SaveHeader {
             requires_pol: container.header.requires_pol,
         },
-        map_info: MapInfo {
-            filename: container.header.map_file_info.filename,
-            name: container.header.map_file_info.name,
-            description: container.header.map_file_info.description,
-        },
+        map_info: container.header.map_info,
     })
 }
 

@@ -1,5 +1,6 @@
 mod r10032;
 
+use crate::model::MapInfo;
 use crate::Error;
 use crate::SaveVersion;
 use crate::version::ContainerRevision;
@@ -16,14 +17,7 @@ pub(crate) fn decode_container(
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ContainerHeader {
     pub requires_pol: bool,
-    pub map_file_info: MapFileInfo,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct MapFileInfo {
-    pub filename: String,
-    pub name: String,
-    pub description: String,
+    pub map_info: MapInfo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
