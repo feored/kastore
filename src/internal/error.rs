@@ -54,10 +54,20 @@ impl Display for ParseError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseErrorKind {
-    Truncated { needed: usize, remaining: usize },
-    UnexpectedValue { expected: &'static str, actual: String },
-    InvalidValue { message: &'static str },
-    Unsupported { message: &'static str },
+    Truncated {
+        needed: usize,
+        remaining: usize,
+    },
+    UnexpectedValue {
+        expected: &'static str,
+        actual: String,
+    },
+    InvalidValue {
+        message: &'static str,
+    },
+    Unsupported {
+        message: &'static str,
+    },
 }
 
 impl Display for ParseErrorKind {

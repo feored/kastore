@@ -9,6 +9,10 @@ impl SaveString {
         Self(bytes)
     }
 
+    pub fn from_utf8(s: &str) -> Self {
+        Self::from_bytes(s.as_bytes().to_vec())
+    }
+
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
@@ -58,7 +62,7 @@ impl From<String> for SaveString {
 
 impl From<&str> for SaveString {
     fn from(value: &str) -> Self {
-        Self::from_bytes(value.as_bytes().to_vec())
+        Self::from_utf8(value)
     }
 }
 

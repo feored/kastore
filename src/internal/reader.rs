@@ -56,6 +56,14 @@ impl<'a> Reader<'a> {
         Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
     }
 
+    pub(crate) fn read_i32_be(
+        &mut self,
+        field_name: &'static str,
+    ) -> std::result::Result<i32, Error> {
+        let bytes = self.read_bytes(4, field_name)?;
+        Ok(i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+    }
+
     pub(crate) fn read_bytes(
         &mut self,
         len: usize,
@@ -82,7 +90,11 @@ impl<'a> Reader<'a> {
         let length_offset = self.offset;
         let len = self.read_u32_be(field_name)?;
         let len = usize::try_from(len).map_err(|_| {
-            self.invalid_value(field_name, length_offset, "string length does not fit in usize")
+            self.invalid_value(
+                field_name,
+                length_offset,
+                "string length does not fit in usize",
+            )
         })?;
         Ok(self.read_bytes(len, field_name)?.to_vec())
     }

@@ -66,54 +66,33 @@ impl Display for SaveVersion {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ContainerRevision {
-    R10032,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum WorldRevision {
-    V1,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SettingsRevision {
-    V1,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum GameOverRevision {
-    V1,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CampaignRevision {
-    V1,
+pub enum MapInfoRevision {
+    V10024,
+    V10033,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VersionProfile {
     pub save_version: SaveVersion,
-    pub container_revision: ContainerRevision,
-    pub world_revision: WorldRevision,
-    pub settings_revision: SettingsRevision,
-    pub game_over_revision: GameOverRevision,
-    pub campaign_revision: Option<CampaignRevision>,
+    pub map_info_revision: MapInfoRevision,
 }
 
-pub const LATEST_PROFILE: VersionProfile = VersionProfile {
+pub const PROFILE_10032: VersionProfile = VersionProfile {
     save_version: SaveVersion::FORMAT_VERSION_1111_RELEASE,
-    container_revision: ContainerRevision::R10032,
-    world_revision: WorldRevision::V1,
-    settings_revision: SettingsRevision::V1,
-    game_over_revision: GameOverRevision::V1,
-    campaign_revision: Some(CampaignRevision::V1),
+    map_info_revision: MapInfoRevision::V10024,
+};
+
+pub const LATEST_PROFILE: VersionProfile = VersionProfile {
+    save_version: SaveVersion::FORMAT_VERSION_1150_RELEASE,
+    map_info_revision: MapInfoRevision::V10033,
 };
 
 pub const fn profile_for(save_version: SaveVersion) -> Option<VersionProfile> {
     if save_version.as_u16() == SaveVersion::FORMAT_VERSION_1111_RELEASE.as_u16() {
+        Some(PROFILE_10032)
+    } else if save_version.as_u16() == SaveVersion::FORMAT_VERSION_1150_RELEASE.as_u16() {
         Some(LATEST_PROFILE)
-    }
-    else {
+    } else {
         None
     }
 }

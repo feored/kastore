@@ -2,60 +2,43 @@ use crate::Error;
 use crate::model::{SaveGame, SaveHeader};
 use crate::version::{SaveVersion, profile_for};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum GameType {
-    Standard,
-    Campaign,
-    Hotseat,
-    Unknown(String),
-}
-
-impl GameType {
-    fn extension(&self) -> &str {
-        match self {
-            GameType::Standard => "sav",
-            GameType::Campaign => "savc",
-            GameType::Hotseat => "savh",
-            GameType::Unknown(_) => "savm",
-        }
-    }
-
-    fn from_extension(extension: &str) -> GameType {
-        match extension {
-            "sav" => GameType::Standard,
-            "savc" => GameType::Campaign,
-            "savh" => GameType::Hotseat,
-            _ => GameType::Unknown(extension.to_string()),
-        }
-    }
-}
-
 pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
-    let profile = crate::version::LATEST_PROFILE;
-    let container = crate::container::decode_container(profile.container_revision, bytes)?;
+    let save_version = crate::container::detect_save_version(bytes)?;
+    let Some(profile) = profile_for(save_version) else {
+        return Err(Error::UnsupportedSaveVersion {
+            version: save_version.as_u16(),
+        });
+    };
+    let parts = crate::container::decode_container(bytes, profile)?;
 
     Ok(SaveGame {
-        source_version: container.save_version,
+        source_version: parts.save_version,
         header: SaveHeader {
-            requires_pol: container.header.requires_pol,
+            requires_pol: parts.requires_pol,
+            map_info: parts.map_info,
+            game_type: parts.game_type,
         },
-        map_info: container.header.map_info,
+        payload: parts.payload,
     })
 }
 
 pub fn save(save_game: &SaveGame) -> std::result::Result<Vec<u8>, Error> {
-    save_as(save_game, SaveVersion::FORMAT_VERSION_1111_RELEASE)
+    save_as(save_game, save_game.source_version)
 }
 
 pub fn save_as(save_game: &SaveGame, target: SaveVersion) -> std::result::Result<Vec<u8>, Error> {
-    let Some(profile) = profile_for(target) else {
-        return Err(Error::UnsupportedSaveVersion {
-            version: target.as_u16(),
+    if save_game.source_version != target {
+        return Err(Error::NotImplemented {
+            feature: "save version conversion",
         });
-    };
-    let _ = (save_game, profile);
-    Err(Error::NotImplemented {
-        feature: "save encode",
+    }
+
+    crate::container::encode_container(&crate::container::ContainerParts {
+        save_version: target,
+        requires_pol: save_game.header.requires_pol,
+        map_info: save_game.header.map_info.clone(),
+        game_type: save_game.header.game_type,
+        payload: save_game.payload.clone(),
     })
 }
 

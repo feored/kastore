@@ -15,8 +15,8 @@ pub enum Race {
     Unknown(u8),
 }
 
-impl From<u8> for Race {
-    fn from(value: u8) -> Self {
+impl Race {
+    pub const fn from_byte(value: u8) -> Self {
         match value {
             0x00 => Race::None,
             0x01 => Race::Knight,
@@ -28,6 +28,21 @@ impl From<u8> for Race {
             0x40 => Race::Multi,
             0x80 => Race::Random,
             other => Race::Unknown(other),
+        }
+    }
+
+    pub const fn to_byte(self) -> u8 {
+        match self {
+            Race::None => 0x00,
+            Race::Knight => 0x01,
+            Race::Barbarian => 0x02,
+            Race::Sorceress => 0x04,
+            Race::Warlock => 0x08,
+            Race::Wizard => 0x10,
+            Race::Necromancer => 0x20,
+            Race::Multi => 0x40,
+            Race::Random => 0x80,
+            Race::Unknown(value) => value,
         }
     }
 }
@@ -127,15 +142,33 @@ impl Display for PlayerColor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+/// Serialized per-slot payload. Slot identity is derived from position in `MapInfo::player_slots`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PlayerSlotInfo {
+    pub race: Race,
+    pub allies: PlayerColorsSet,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlayerSlotView {
     pub slot_index: u8,
     pub color: Option<PlayerColor>,
     pub race: Race,
     pub allies: PlayerColorsSet,
 }
 
-impl Display for PlayerSlotInfo {
+impl PlayerSlotView {
+    pub const fn from_stored(slot_index: u8, slot: PlayerSlotInfo) -> Self {
+        Self {
+            slot_index,
+            color: PlayerColor::from_index(slot_index),
+            race: slot.race,
+            allies: slot.allies,
+        }
+    }
+}
+
+impl Display for PlayerSlotView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.color {
             Some(color) => {

@@ -1,33 +1,33 @@
 use std::fmt::Display;
 
 use crate::SaveString;
-use crate::model::{PlayerColorsSet, PlayerSlotInfo, SupportedLanguage};
+use crate::model::{PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, SupportedLanguage};
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GameVersion {
     #[default]
     SuccessionWars,
     PriceOfLoyalty,
     Resurrection,
+    Unknown(u32),
 }
 
-impl From<u32> for GameVersion {
-    fn from(value: u32) -> Self {
+impl GameVersion {
+    pub const fn from_u32(value: u32) -> Self {
         match value {
             0 => GameVersion::SuccessionWars,
             1 => GameVersion::PriceOfLoyalty,
             2 => GameVersion::Resurrection,
-            other => panic!("Unknown game version: {other}"),
+            other => GameVersion::Unknown(other),
         }
     }
-}
 
-impl From<GameVersion> for u32 {
-    fn from(value: GameVersion) -> Self {
-        match value {
+    pub const fn to_u32(self) -> u32 {
+        match self {
             GameVersion::SuccessionWars => 0,
             GameVersion::PriceOfLoyalty => 1,
             GameVersion::Resurrection => 2,
+            GameVersion::Unknown(other) => other,
         }
     }
 }
@@ -39,7 +39,7 @@ pub struct WorldDate {
     pub month: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Difficulty {
     #[default]
     Easy,
@@ -50,8 +50,8 @@ pub enum Difficulty {
     Unknown(u8),
 }
 
-impl From<u8> for Difficulty {
-    fn from(value: u8) -> Self {
+impl Difficulty {
+    pub const fn from_byte(value: u8) -> Self {
         match value {
             0 => Difficulty::Easy,
             1 => Difficulty::Normal,
@@ -61,11 +61,9 @@ impl From<u8> for Difficulty {
             other => Difficulty::Unknown(other),
         }
     }
-}
 
-impl From<Difficulty> for u8 {
-    fn from(value: Difficulty) -> Self {
-        match value {
+    pub const fn to_byte(self) -> u8 {
+        match self {
             Difficulty::Easy => 0,
             Difficulty::Normal => 1,
             Difficulty::Hard => 2,
@@ -88,8 +86,8 @@ pub enum VictoryConditionKind {
     Unknown(u8),
 }
 
-impl From<u8> for VictoryConditionKind {
-    fn from(value: u8) -> Self {
+impl VictoryConditionKind {
+    pub const fn from_byte(value: u8) -> Self {
         match value {
             0 => VictoryConditionKind::DefeatEveryone,
             1 => VictoryConditionKind::CaptureTown,
@@ -100,11 +98,9 @@ impl From<u8> for VictoryConditionKind {
             other => VictoryConditionKind::Unknown(other),
         }
     }
-}
 
-impl From<VictoryConditionKind> for u8 {
-    fn from(value: VictoryConditionKind) -> Self {
-        match value {
+    pub const fn to_byte(self) -> u8 {
+        match self {
             VictoryConditionKind::DefeatEveryone => 0,
             VictoryConditionKind::CaptureTown => 1,
             VictoryConditionKind::KillHero => 2,
@@ -134,8 +130,8 @@ pub enum LossConditionKind {
     Unknown(u8),
 }
 
-impl From<u8> for LossConditionKind {
-    fn from(value: u8) -> Self {
+impl LossConditionKind {
+    pub const fn from_byte(value: u8) -> Self {
         match value {
             0 => LossConditionKind::LossEverything,
             1 => LossConditionKind::LossTown,
@@ -144,11 +140,9 @@ impl From<u8> for LossConditionKind {
             other => LossConditionKind::Unknown(other),
         }
     }
-}
 
-impl From<LossConditionKind> for u8 {
-    fn from(value: LossConditionKind) -> Self {
-        match value {
+    pub const fn to_byte(self) -> u8 {
+        match self {
             LossConditionKind::LossEverything => 0,
             LossConditionKind::LossTown => 1,
             LossConditionKind::LossHero => 2,
@@ -169,9 +163,11 @@ pub struct MapInfo {
     pub filename: SaveString,
     pub name: SaveString,
     pub description: SaveString,
+    pub creator_notes: Option<SaveString>,
     pub width: u16,
     pub height: u16,
     pub difficulty: Difficulty,
+    /// Slot order matters: index 0 is blue, 1 is green, and so on.
     pub player_slots: Vec<PlayerSlotInfo>,
     pub kingdom_colors: PlayerColorsSet,
     pub colors_available_for_humans: PlayerColorsSet,
@@ -186,16 +182,32 @@ pub struct MapInfo {
     pub main_language: SupportedLanguage,
 }
 
+impl MapInfo {
+    pub fn player_slot(&self, slot_index: u8) -> Option<PlayerSlotView> {
+        self.player_slots
+            .get(usize::from(slot_index))
+            .copied()
+            .map(|slot| PlayerSlotView::from_stored(slot_index, slot))
+    }
+}
+
 impl Display for MapInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "map filename: {}", self.filename)?;
         writeln!(f, "map name: {}", self.name)?;
         writeln!(f, "description: {}", self.description)?;
+        match &self.creator_notes {
+            Some(creator_notes) => writeln!(f, "creator notes: {}", creator_notes)?,
+            None => writeln!(f, "creator notes: <none>")?,
+        }
         writeln!(f, "width: {}", self.width)?;
         writeln!(f, "height: {}", self.height)?;
         writeln!(f, "difficulty: {:?}", self.difficulty)?;
+        writeln!(f, "player slots: {}", self.player_slots.len())?;
 
-        for slot in &self.player_slots {
+        for (index, slot) in self.player_slots.iter().copied().enumerate() {
+            let slot_index = u8::try_from(index).expect("player slot index must fit in u8");
+            let slot = PlayerSlotView::from_stored(slot_index, slot);
             writeln!(f, "{slot}")?;
         }
 

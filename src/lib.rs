@@ -1,5 +1,5 @@
 pub mod codec;
-pub mod container;
+pub(crate) mod container;
 pub(crate) mod internal;
 pub mod layout;
 pub mod model;

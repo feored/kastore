@@ -1,22 +1,21 @@
-use super::GameType;
+use std::fs;
+
+use crate::{SaveVersion, load, save};
 
 #[test]
-fn game_type_extension_mapping_round_trips() {
-    let game_type = GameType::Standard;
-    assert_eq!(game_type.extension(), "sav");
+fn save_round_trips_loaded_fixture() {
+    let bytes = fs::read("tests/saves/10032/Guardian_War_0009.sav").unwrap();
 
-    let game_type = GameType::Campaign;
-    assert_eq!(game_type.extension(), "savc");
+    let save_game = load(&bytes).unwrap();
+    let encoded = save(&save_game).unwrap();
+    let display = save_game.to_string();
 
-    let game_type = GameType::Hotseat;
-    assert_eq!(game_type.extension(), "savh");
-
-    let extension = "sav";
-    assert_eq!(GameType::from_extension(extension), GameType::Standard);
-
-    let extension = "savc";
-    assert_eq!(GameType::from_extension(extension), GameType::Campaign);
-
-    let extension = "savh";
-    assert_eq!(GameType::from_extension(extension), GameType::Hotseat);
+    assert_eq!(
+        save_game.source_version,
+        SaveVersion::FORMAT_VERSION_1111_RELEASE
+    );
+    assert!(display.contains("save version: 10032"));
+    assert!(display.contains("game type: Standard"));
+    assert!(display.contains("map name: Guardian War"));
+    assert_eq!(encoded, bytes);
 }
