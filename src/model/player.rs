@@ -151,17 +151,19 @@ pub struct PlayerSlotInfo {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerSlotView {
-    pub slot_index: u8,
+    pub slot_index: usize,
     pub color: Option<PlayerColor>,
     pub race: Race,
     pub allies: PlayerColorsSet,
 }
 
 impl PlayerSlotView {
-    pub const fn from_stored(slot_index: u8, slot: PlayerSlotInfo) -> Self {
+    pub fn from_stored(slot_index: usize, slot: PlayerSlotInfo) -> Self {
         Self {
             slot_index,
-            color: PlayerColor::from_index(slot_index),
+            color: u8::try_from(slot_index)
+                .ok()
+                .and_then(PlayerColor::from_index),
             race: slot.race,
             allies: slot.allies,
         }

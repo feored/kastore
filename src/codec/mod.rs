@@ -12,7 +12,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
     let parts = crate::container::decode_container(bytes, profile)?;
 
     Ok(SaveGame {
-        source_version: parts.save_version,
+        source_version: save_version,
         header: SaveHeader {
             requires_pol: parts.requires_pol,
             map_info: parts.map_info,
@@ -27,19 +27,27 @@ pub fn save(save_game: &SaveGame) -> std::result::Result<Vec<u8>, Error> {
 }
 
 pub fn save_as(save_game: &SaveGame, target: SaveVersion) -> std::result::Result<Vec<u8>, Error> {
+    let Some(profile) = profile_for(target) else {
+        return Err(Error::UnsupportedSaveVersion {
+            version: target.as_u16(),
+        });
+    };
+
     if save_game.source_version != target {
         return Err(Error::NotImplemented {
             feature: "save version conversion",
         });
     }
 
-    crate::container::encode_container(&crate::container::ContainerParts {
-        save_version: target,
-        requires_pol: save_game.header.requires_pol,
-        map_info: save_game.header.map_info.clone(),
-        game_type: save_game.header.game_type,
-        payload: save_game.payload.clone(),
-    })
+    crate::container::encode_container(
+        &crate::container::ContainerParts {
+            requires_pol: save_game.header.requires_pol,
+            map_info: save_game.header.map_info.clone(),
+            game_type: save_game.header.game_type,
+            payload: save_game.payload.clone(),
+        },
+        profile,
+    )
 }
 
 #[cfg(test)]

@@ -62,7 +62,8 @@ fn decode(bytes: &[u8], save_version: SaveVersion) -> Result<super::ContainerPar
 
 fn decode_then_encode(bytes: &[u8], save_version: SaveVersion) -> Result<Vec<u8>, crate::Error> {
     let parts = decode(bytes, save_version)?;
-    encode_container(&parts)
+    let profile = profile_for(save_version).expect("supported test version");
+    encode_container(&parts, profile)
 }
 
 #[test]

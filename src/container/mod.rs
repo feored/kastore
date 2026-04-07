@@ -6,7 +6,7 @@ use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::{GameType, MapInfo};
-use crate::version::{VersionProfile, profile_for};
+use crate::version::VersionProfile;
 
 pub(crate) const MAGIC_NUMBER: u16 = 0xFF03;
 pub(crate) const REQUIRES_POL: u16 = 0x4000;
@@ -19,7 +19,6 @@ struct ContainerVersion {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub(crate) struct ContainerParts {
-    pub(crate) save_version: SaveVersion,
     pub(crate) requires_pol: bool,
     pub(crate) map_info: MapInfo,
     pub(crate) game_type: GameType,
@@ -92,7 +91,6 @@ pub(crate) fn decode_container(
     let game_type = GameType::from_i32(reader.read_i32_be("game type")?);
 
     Ok(ContainerParts {
-        save_version: version.save_version,
         requires_pol,
         map_info,
         game_type,
@@ -100,16 +98,13 @@ pub(crate) fn decode_container(
     })
 }
 
-pub(crate) fn encode_container(parts: &ContainerParts) -> std::result::Result<Vec<u8>, Error> {
-    let Some(profile) = profile_for(parts.save_version) else {
-        return Err(Error::UnsupportedSaveVersion {
-            version: parts.save_version.as_u16(),
-        });
-    };
-
+pub(crate) fn encode_container(
+    parts: &ContainerParts,
+    profile: VersionProfile,
+) -> std::result::Result<Vec<u8>, Error> {
     let mut writer = Writer::new();
     encode_magic(&mut writer);
-    encode_version(&mut writer, parts.save_version);
+    encode_version(&mut writer, profile.save_version);
     writer.write_u16_be(if parts.requires_pol { REQUIRES_POL } else { 0 });
     map_info::encode(&mut writer, &parts.map_info, profile.map_info_revision)?;
     writer.write_i32_be(parts.game_type.to_i32());

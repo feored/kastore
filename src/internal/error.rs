@@ -2,9 +2,17 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
-    UnsupportedSaveVersion { version: u16 },
+    UnsupportedSaveVersion {
+        version: u16,
+    },
     Parse(ParseError),
-    NotImplemented { feature: &'static str },
+    InvalidModel {
+        field: &'static str,
+        message: &'static str,
+    },
+    NotImplemented {
+        feature: &'static str,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,6 +105,9 @@ impl Display for Error {
                 write!(f, "unsupported save version: {version}")
             }
             Error::Parse(error) => error.fmt(f),
+            Error::InvalidModel { field, message } => {
+                write!(f, "invalid model field \"{field}\": {message}")
+            }
             Error::NotImplemented { feature } => write!(f, "not implemented: {feature}"),
         }
     }

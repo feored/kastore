@@ -104,9 +104,12 @@ pub(crate) fn encode(
     writer.write_u16_be(map_info.width);
     writer.write_u16_be(map_info.height);
     writer.write_u8(map_info.difficulty.to_byte());
-    writer.write_u8(
-        u8::try_from(map_info.player_slots.len()).expect("player slot count must fit in u8"),
-    );
+    let player_slot_count =
+        u8::try_from(map_info.player_slots.len()).map_err(|_| crate::Error::InvalidModel {
+            field: "player slots",
+            message: "player slot count must fit in u8",
+        })?;
+    writer.write_u8(player_slot_count);
 
     for slot in &map_info.player_slots {
         writer.write_u8(slot.race.to_byte());

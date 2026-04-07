@@ -187,7 +187,7 @@ impl MapInfo {
         self.player_slots
             .get(usize::from(slot_index))
             .copied()
-            .map(|slot| PlayerSlotView::from_stored(slot_index, slot))
+            .map(|slot| PlayerSlotView::from_stored(usize::from(slot_index), slot))
     }
 }
 
@@ -206,8 +206,7 @@ impl Display for MapInfo {
         writeln!(f, "player slots: {}", self.player_slots.len())?;
 
         for (index, slot) in self.player_slots.iter().copied().enumerate() {
-            let slot_index = u8::try_from(index).expect("player slot index must fit in u8");
-            let slot = PlayerSlotView::from_stored(slot_index, slot);
+            let slot = PlayerSlotView::from_stored(index, slot);
             writeln!(f, "{slot}")?;
         }
 

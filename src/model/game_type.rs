@@ -69,7 +69,13 @@ impl Display for GameType {
 
         let unknown_bits = self.0 & !known_bits;
         if unknown_bits != 0 {
-            return write!(f, "{} (0x{:08X}, unknown 0x{:08X})", parts.join(" | "), self.0, unknown_bits);
+            return write!(
+                f,
+                "{} (0x{:08X}, unknown 0x{:08X})",
+                parts.join(" | "),
+                self.0,
+                unknown_bits
+            );
         }
 
         write!(f, "{} (0x{:08X})", parts.join(" | "), self.0)
