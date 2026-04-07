@@ -156,25 +156,25 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
 
     let container = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap();
 
-    assert_eq!(container.map_info.filename.as_bytes(), &[0xFF, 0xFE]);
-    assert_eq!(container.map_info.name.as_bytes(), b"A\0B");
-    assert_eq!(container.map_info.player_slots.len(), 2);
+    assert_eq!(container.file_info.filename.as_bytes(), &[0xFF, 0xFE]);
+    assert_eq!(container.file_info.name.as_bytes(), b"A\0B");
+    assert_eq!(container.file_info.player_slots.len(), 2);
     assert_eq!(
-        container.map_info.player_slots[0],
+        container.file_info.player_slots[0],
         crate::model::PlayerSlotInfo {
             race: crate::model::Race::Knight,
             allies: crate::model::PlayerColorsSet::from_bits(0x05),
         }
     );
     assert_eq!(
-        container.map_info.player_slots[1],
+        container.file_info.player_slots[1],
         crate::model::PlayerSlotInfo {
             race: crate::model::Race::Necromancer,
             allies: crate::model::PlayerColorsSet::from_bits(0x06),
         }
     );
     assert_eq!(
-        container.map_info.player_slot(0),
+        container.file_info.player_slot(0),
         Some(crate::model::PlayerSlotView {
             slot_index: 0,
             color: Some(crate::model::PlayerColor::Blue),
@@ -183,7 +183,7 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         })
     );
     assert_eq!(
-        container.map_info.player_slot(1),
+        container.file_info.player_slot(1),
         Some(crate::model::PlayerSlotView {
             slot_index: 1,
             color: Some(crate::model::PlayerColor::Green),
@@ -192,11 +192,11 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         })
     );
     assert_eq!(
-        container.map_info.kingdom_colors,
+        container.file_info.kingdom_colors,
         crate::model::PlayerColorsSet::from_bits(0x11)
     );
     assert_eq!(
-        container.map_info.victory_condition,
+        container.file_info.victory_condition,
         crate::model::VictoryConditionData {
             kind: crate::model::VictoryConditionKind::CollectEnoughGold,
             comp_also_wins: true,
@@ -205,22 +205,22 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         }
     );
     assert_eq!(
-        container.map_info.loss_condition,
+        container.file_info.loss_condition,
         crate::model::LossConditionData {
             kind: crate::model::LossConditionKind::LossHero,
             params: [0xABCD, 0x0009],
         }
     );
-    assert_eq!(container.map_info.timestamp, 0xDEADBEEF);
+    assert_eq!(container.file_info.timestamp, 0xDEADBEEF);
     assert_eq!(
-        container.map_info.version,
+        container.file_info.version,
         crate::model::GameVersion::Unknown(7)
     );
     assert_eq!(
-        container.map_info.main_language,
+        container.file_info.main_language,
         crate::model::SupportedLanguage::POLISH
     );
-    assert_eq!(container.map_info.creator_notes, None);
+    assert_eq!(container.file_info.creator_notes, None);
     assert_eq!(
         container.game_type,
         crate::model::GameType::from_i32(0x0000_0005)

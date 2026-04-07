@@ -20,7 +20,8 @@ struct ContainerVersion {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub(crate) struct ContainerParts {
     pub(crate) requires_pol: bool,
-    pub(crate) map_info: MapInfo,
+    /// Summary metadata from the outer save header (`HeaderSAV` / `Maps::FileInfo`).
+    pub(crate) file_info: MapInfo,
     pub(crate) game_type: GameType,
     pub(crate) payload: Vec<u8>,
 }
@@ -87,12 +88,12 @@ pub(crate) fn decode_container(
 
     reader.set_section(ParseSection::Header);
     let requires_pol = (reader.read_u16_be("flags")? & REQUIRES_POL) != 0;
-    let map_info = map_info::decode(&mut reader, profile.map_info_revision)?;
+    let file_info = map_info::decode(&mut reader, profile.map_info_revision)?;
     let game_type = GameType::from_i32(reader.read_i32_be("game type")?);
 
     Ok(ContainerParts {
         requires_pol,
-        map_info,
+        file_info,
         game_type,
         payload: reader.remaining().to_vec(),
     })
@@ -106,7 +107,7 @@ pub(crate) fn encode_container(
     encode_magic(&mut writer);
     encode_version(&mut writer, profile.save_version);
     writer.write_u16_be(if parts.requires_pol { REQUIRES_POL } else { 0 });
-    map_info::encode(&mut writer, &parts.map_info, profile.map_info_revision)?;
+    map_info::encode(&mut writer, &parts.file_info, profile.map_info_revision)?;
     writer.write_i32_be(parts.game_type.to_i32());
     writer.write_bytes(&parts.payload);
     Ok(writer.into_bytes())

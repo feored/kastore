@@ -6,7 +6,10 @@ use crate::version::SaveVersion;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SaveHeader {
     pub requires_pol: bool,
-    pub map_info: MapInfo,
+    /// Summary metadata from the outer save header (`HeaderSAV` / `Maps::FileInfo`).
+    /// Some of these values are also stored inside the payload and may be overridden
+    /// when the save is fully loaded by the game.
+    pub file_info: MapInfo,
     pub game_type: GameType,
 }
 
@@ -23,6 +26,6 @@ impl Display for SaveGame {
         writeln!(f, "game type: {}", self.header.game_type)?;
         writeln!(f, "requires_pol: {}", self.header.requires_pol)?;
         writeln!(f, "payload bytes: {}", self.payload.len())?;
-        write!(f, "{}", self.header.map_info)
+        write!(f, "{}", self.header.file_info)
     }
 }

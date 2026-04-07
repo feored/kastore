@@ -95,49 +95,49 @@ pub(crate) fn decode(
 
 pub(crate) fn encode(
     writer: &mut Writer,
-    map_info: &MapInfo,
+    file_info: &MapInfo,
     revision: MapInfoRevision,
 ) -> std::result::Result<(), crate::Error> {
-    writer.write_save_string(&map_info.filename);
-    writer.write_save_string(&map_info.name);
-    writer.write_save_string(&map_info.description);
-    writer.write_u16_be(map_info.width);
-    writer.write_u16_be(map_info.height);
-    writer.write_u8(map_info.difficulty.to_byte());
+    writer.write_save_string(&file_info.filename);
+    writer.write_save_string(&file_info.name);
+    writer.write_save_string(&file_info.description);
+    writer.write_u16_be(file_info.width);
+    writer.write_u16_be(file_info.height);
+    writer.write_u8(file_info.difficulty.to_byte());
     let player_slot_count =
-        u8::try_from(map_info.player_slots.len()).map_err(|_| crate::Error::InvalidModel {
+        u8::try_from(file_info.player_slots.len()).map_err(|_| crate::Error::InvalidModel {
             field: "player slots",
             message: "player slot count must fit in u8",
         })?;
     writer.write_u8(player_slot_count);
 
-    for slot in &map_info.player_slots {
+    for slot in &file_info.player_slots {
         writer.write_u8(slot.race.to_byte());
         writer.write_u8(slot.allies.bits());
     }
 
-    writer.write_u8(map_info.kingdom_colors.bits());
-    writer.write_u8(map_info.colors_available_for_humans.bits());
-    writer.write_u8(map_info.colors_available_for_comp.bits());
-    writer.write_u8(map_info.colors_of_random_races.bits());
-    writer.write_u8(map_info.victory_condition.kind.to_byte());
-    writer.write_byte_from_bool(map_info.victory_condition.comp_also_wins);
-    writer.write_byte_from_bool(map_info.victory_condition.allow_normal_victory);
-    writer.write_u16_be(map_info.victory_condition.params[0]);
-    writer.write_u16_be(map_info.victory_condition.params[1]);
-    writer.write_u8(map_info.loss_condition.kind.to_byte());
-    writer.write_u16_be(map_info.loss_condition.params[0]);
-    writer.write_u16_be(map_info.loss_condition.params[1]);
-    writer.write_u32_be(map_info.timestamp);
-    writer.write_byte_from_bool(map_info.start_with_hero_in_first_castle);
-    writer.write_u32_be(map_info.version.to_u32());
-    writer.write_u32_be(map_info.world_date.day);
-    writer.write_u32_be(map_info.world_date.week);
-    writer.write_u32_be(map_info.world_date.month);
-    writer.write_u8(u8::from(map_info.main_language));
+    writer.write_u8(file_info.kingdom_colors.bits());
+    writer.write_u8(file_info.colors_available_for_humans.bits());
+    writer.write_u8(file_info.colors_available_for_comp.bits());
+    writer.write_u8(file_info.colors_of_random_races.bits());
+    writer.write_u8(file_info.victory_condition.kind.to_byte());
+    writer.write_byte_from_bool(file_info.victory_condition.comp_also_wins);
+    writer.write_byte_from_bool(file_info.victory_condition.allow_normal_victory);
+    writer.write_u16_be(file_info.victory_condition.params[0]);
+    writer.write_u16_be(file_info.victory_condition.params[1]);
+    writer.write_u8(file_info.loss_condition.kind.to_byte());
+    writer.write_u16_be(file_info.loss_condition.params[0]);
+    writer.write_u16_be(file_info.loss_condition.params[1]);
+    writer.write_u32_be(file_info.timestamp);
+    writer.write_byte_from_bool(file_info.start_with_hero_in_first_castle);
+    writer.write_u32_be(file_info.version.to_u32());
+    writer.write_u32_be(file_info.world_date.day);
+    writer.write_u32_be(file_info.world_date.week);
+    writer.write_u32_be(file_info.world_date.month);
+    writer.write_u8(u8::from(file_info.main_language));
 
     if revision == MapInfoRevision::V10033 {
-        match &map_info.creator_notes {
+        match &file_info.creator_notes {
             Some(creator_notes) => writer.write_save_string(creator_notes),
             None => writer.write_u32_be(0),
         }

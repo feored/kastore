@@ -20,7 +20,7 @@ fn save_round_trips_loaded_fixture() {
 fn save_rejects_too_many_player_slots_without_panicking() {
     let mut save_game = SaveGame::default();
     save_game.source_version = SaveVersion::FORMAT_VERSION_1111_RELEASE;
-    save_game.header.map_info.player_slots = vec![crate::model::PlayerSlotInfo::default(); 256];
+    save_game.header.file_info.player_slots = vec![crate::model::PlayerSlotInfo::default(); 256];
 
     let display = save_game.to_string();
     let error = save(&save_game).unwrap_err();

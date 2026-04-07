@@ -15,7 +15,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
         source_version: save_version,
         header: SaveHeader {
             requires_pol: parts.requires_pol,
-            map_info: parts.map_info,
+            file_info: parts.file_info,
             game_type: parts.game_type,
         },
         payload: parts.payload,
@@ -42,7 +42,7 @@ pub fn save_as(save_game: &SaveGame, target: SaveVersion) -> std::result::Result
     crate::container::encode_container(
         &crate::container::ContainerParts {
             requires_pol: save_game.header.requires_pol,
-            map_info: save_game.header.map_info.clone(),
+            file_info: save_game.header.file_info.clone(),
             game_type: save_game.header.game_type,
             payload: save_game.payload.clone(),
         },
