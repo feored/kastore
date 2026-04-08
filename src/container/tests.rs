@@ -1,3 +1,8 @@
+use std::io::Write;
+
+use flate2::Compression;
+use flate2::write::ZlibEncoder;
+
 use crate::version::{SaveVersion, profile_for};
 use crate::{ParseError, ParseErrorKind, ParseSection};
 
@@ -13,7 +18,25 @@ fn minimal_container_bytes(
     version_string: &[u8],
     creator_notes: Option<&[u8]>,
     game_type: i32,
+    payload: &[u8],
 ) -> Vec<u8> {
+    minimal_container_bytes_with_payload_offset(
+        save_version,
+        version_string,
+        creator_notes,
+        game_type,
+        payload,
+    )
+    .0
+}
+
+fn minimal_container_bytes_with_payload_offset(
+    save_version: SaveVersion,
+    version_string: &[u8],
+    creator_notes: Option<&[u8]>,
+    game_type: i32,
+    payload: &[u8],
+) -> (Vec<u8>, usize) {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(&[0xFF, 0x03]);
     push_string(&mut bytes, version_string);
@@ -51,8 +74,22 @@ fn minimal_container_bytes(
     }
 
     bytes.extend_from_slice(&game_type.to_be_bytes());
+    let payload_offset = bytes.len();
+    push_payload_chunk(&mut bytes, payload);
 
-    bytes
+    (bytes, payload_offset)
+}
+
+fn push_payload_chunk(bytes: &mut Vec<u8>, payload: &[u8]) {
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(payload).unwrap();
+    let compressed = encoder.finish().unwrap();
+
+    bytes.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&(compressed.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&0u16.to_be_bytes());
+    bytes.extend_from_slice(&0u16.to_be_bytes());
+    bytes.extend_from_slice(&compressed);
 }
 
 fn decode(bytes: &[u8], save_version: SaveVersion) -> Result<super::ContainerParts, crate::Error> {
@@ -75,7 +112,7 @@ fn decode_container_rejects_invalid_magic() {
         error,
         crate::Error::Parse(ParseError {
             section: ParseSection::Container,
-            field: "magic number",
+            field: "save file magic number",
             offset: 0,
             kind: ParseErrorKind::UnexpectedValue {
                 expected: "0xFF03",
@@ -113,7 +150,7 @@ fn decode_container_returns_error_for_truncated_map_filename() {
 
 #[test]
 fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
-    let bytes = [
+    let mut bytes = vec![
         0xFF, 0x03, // magic
         0x00, 0x00, 0x00, 0x05, // version string length
         b'o', b'o', b'p', b's', b'!', // version string
@@ -153,6 +190,7 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         0x02, // main language
         0x00, 0x00, 0x00, 0x05, // game type
     ];
+    push_payload_chunk(&mut bytes, &[0xDE, 0xAD, 0xBE, 0xEF]);
 
     let container = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap();
 
@@ -225,6 +263,62 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         container.game_type,
         crate::model::GameType::from_i32(0x0000_0005)
     );
+    assert_eq!(container.payload, vec![0xDE, 0xAD, 0xBE, 0xEF]);
+}
+
+#[test]
+fn decode_container_rejects_invalid_payload_compression_version() {
+    let (mut bytes, payload_offset) = minimal_container_bytes_with_payload_offset(
+        SaveVersion::FORMAT_VERSION_1111_RELEASE,
+        b"10032",
+        None,
+        0x0000_0002,
+        &[0xFF, 0x03],
+    );
+    let compression_version_offset = payload_offset + 8;
+    bytes[compression_version_offset] = 0x00;
+    bytes[compression_version_offset + 1] = 0x01;
+
+    let error = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap_err();
+
+    assert_eq!(
+        error,
+        crate::Error::Parse(ParseError {
+            section: ParseSection::Payload,
+            field: "payload compression format version",
+            offset: compression_version_offset,
+            kind: ParseErrorKind::UnexpectedValue {
+                expected: "0",
+                actual: "1".to_string(),
+            },
+        })
+    );
+}
+
+#[test]
+fn decode_container_rejects_payload_size_mismatch() {
+    let (mut bytes, payload_offset) = minimal_container_bytes_with_payload_offset(
+        SaveVersion::FORMAT_VERSION_1111_RELEASE,
+        b"10032",
+        None,
+        0x0000_0002,
+        &[0xAA, 0xBB, 0xCC],
+    );
+    bytes[payload_offset..payload_offset + 4].copy_from_slice(&5u32.to_be_bytes());
+
+    let error = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap_err();
+
+    assert_eq!(
+        error,
+        crate::Error::Parse(ParseError {
+            section: ParseSection::Payload,
+            field: "payload decompressed size",
+            offset: payload_offset,
+            kind: ParseErrorKind::InvalidValue {
+                message: "decompressed payload size does not match raw size",
+            },
+        })
+    );
 }
 
 #[test]
@@ -234,9 +328,12 @@ fn encode_container_round_trips_v10033_creator_notes() {
         b"10033",
         Some(&[0xFF, 0x00, b'A']),
         0x0000_0002,
+        &[0xFF, 0x03],
     );
 
     let encoded = decode_then_encode(&bytes, SaveVersion::FORMAT_VERSION_1150_RELEASE).unwrap();
+    let original = decode(&bytes, SaveVersion::FORMAT_VERSION_1150_RELEASE).unwrap();
+    let round_tripped = decode(&encoded, SaveVersion::FORMAT_VERSION_1150_RELEASE).unwrap();
 
-    assert_eq!(encoded, bytes);
+    assert_eq!(round_tripped, original);
 }

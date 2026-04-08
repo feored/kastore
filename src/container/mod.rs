@@ -1,14 +1,15 @@
 mod map_info;
+mod payload;
 
 use crate::Error;
 use crate::SaveVersion;
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
-use crate::model::{GameType, MapInfo};
+use crate::model::{GameType, MapInfo, PayloadCompressionHeader};
 use crate::version::VersionProfile;
 
-pub(crate) const MAGIC_NUMBER: u16 = 0xFF03;
+pub(crate) const SAVE_FILE_MAGIC_NUMBER: u16 = 0xFF03;
 pub(crate) const REQUIRES_POL: u16 = 0x4000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,16 +24,18 @@ pub(crate) struct ContainerParts {
     /// Summary metadata from the outer save header (`HeaderSAV` / `Maps::FileInfo`).
     pub(crate) file_info: MapInfo,
     pub(crate) game_type: GameType,
+    pub(crate) payload_compression_header: PayloadCompressionHeader,
+    /// Decompressed gameplay payload bytes from the compressed save chunk.
     pub(crate) payload: Vec<u8>,
 }
 
-fn expect_magic(reader: &mut Reader<'_>) -> std::result::Result<(), Error> {
+fn expect_save_file_magic(reader: &mut Reader<'_>) -> std::result::Result<(), Error> {
     let magic_offset = reader.position();
-    let magic_number = reader.read_u16_be("magic number")?;
+    let magic_number = reader.read_u16_be("save file magic number")?;
 
-    if magic_number != MAGIC_NUMBER {
+    if magic_number != SAVE_FILE_MAGIC_NUMBER {
         return Err(reader.unexpected_value(
-            "magic number",
+            "save file magic number",
             magic_offset,
             "0xFF03",
             format!("0x{magic_number:04X}"),
@@ -42,8 +45,8 @@ fn expect_magic(reader: &mut Reader<'_>) -> std::result::Result<(), Error> {
     Ok(())
 }
 
-fn encode_magic(writer: &mut crate::internal::writer::Writer) {
-    writer.write_u16_be(MAGIC_NUMBER);
+fn encode_save_file_magic(writer: &mut crate::internal::writer::Writer) {
+    writer.write_u16_be(SAVE_FILE_MAGIC_NUMBER);
 }
 
 fn decode_version(reader: &mut Reader<'_>) -> std::result::Result<ContainerVersion, Error> {
@@ -66,7 +69,7 @@ fn encode_version(writer: &mut crate::internal::writer::Writer, version: SaveVer
 
 pub(crate) fn detect_save_version(bytes: &[u8]) -> std::result::Result<SaveVersion, Error> {
     let mut reader = Reader::with_context(bytes, ParseSection::Container);
-    expect_magic(&mut reader)?;
+    expect_save_file_magic(&mut reader)?;
     Ok(decode_version(&mut reader)?.save_version)
 }
 
@@ -75,7 +78,7 @@ pub(crate) fn decode_container(
     profile: VersionProfile,
 ) -> std::result::Result<ContainerParts, Error> {
     let mut reader = Reader::with_context(bytes, ParseSection::Container);
-    expect_magic(&mut reader)?;
+    expect_save_file_magic(&mut reader)?;
     let version = decode_version(&mut reader)?;
 
     if version.save_version != profile.save_version {
@@ -90,12 +93,14 @@ pub(crate) fn decode_container(
     let requires_pol = (reader.read_u16_be("flags")? & REQUIRES_POL) != 0;
     let file_info = map_info::decode(&mut reader, profile.map_info_revision)?;
     let game_type = GameType::from_i32(reader.read_i32_be("game type")?);
+    let (payload_compression_header, payload) = payload::decode_payload(&mut reader)?;
 
     Ok(ContainerParts {
         requires_pol,
         file_info,
         game_type,
-        payload: reader.remaining().to_vec(),
+        payload_compression_header,
+        payload,
     })
 }
 
@@ -104,12 +109,12 @@ pub(crate) fn encode_container(
     profile: VersionProfile,
 ) -> std::result::Result<Vec<u8>, Error> {
     let mut writer = Writer::new();
-    encode_magic(&mut writer);
+    encode_save_file_magic(&mut writer);
     encode_version(&mut writer, profile.save_version);
     writer.write_u16_be(if parts.requires_pol { REQUIRES_POL } else { 0 });
     map_info::encode(&mut writer, &parts.file_info, profile.map_info_revision)?;
     writer.write_i32_be(parts.game_type.to_i32());
-    writer.write_bytes(&parts.payload);
+    let _payload_compression_header = payload::encode_payload(&mut writer, &parts.payload)?;
     Ok(writer.into_bytes())
 }
 

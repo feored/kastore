@@ -196,10 +196,6 @@ impl Display for MapInfo {
         writeln!(f, "map filename: {}", self.filename)?;
         writeln!(f, "map name: {}", self.name)?;
         writeln!(f, "description: {}", self.description)?;
-        match &self.creator_notes {
-            Some(creator_notes) => writeln!(f, "creator notes: {}", creator_notes)?,
-            None => writeln!(f, "creator notes: <none>")?,
-        }
         writeln!(f, "width: {}", self.width)?;
         writeln!(f, "height: {}", self.height)?;
         writeln!(f, "difficulty: {:?}", self.difficulty)?;
@@ -233,10 +229,17 @@ impl Display for MapInfo {
         writeln!(f, "version: {:?}", self.version)?;
         writeln!(
             f,
-            "world date: month {}, week {}, day {}",
-            self.world_date.month, self.world_date.week, self.world_date.day
+            "world date: day {}, week {}, month {}",
+            self.world_date.day, self.world_date.week, self.world_date.month
         )?;
         writeln!(f, "main language: {}", self.main_language)?;
+        match &self.creator_notes {
+            Some(creator_notes) if creator_notes.is_empty() => {
+                writeln!(f, "creator notes: <empty>")?
+            }
+            Some(creator_notes) => writeln!(f, "creator notes: {}", creator_notes)?,
+            None => writeln!(f, "creator notes: <none>")?,
+        }
         Ok(())
     }
 }

@@ -24,10 +24,6 @@ impl<'a> Reader<'a> {
         self.offset
     }
 
-    pub(crate) fn remaining(&self) -> &'a [u8] {
-        &self.bytes[self.offset..]
-    }
-
     pub(crate) fn read_u8(&mut self, field_name: &'static str) -> std::result::Result<u8, Error> {
         let bytes = self.read_bytes(1, field_name)?;
         Ok(bytes[0])

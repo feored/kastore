@@ -18,6 +18,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
             file_info: parts.file_info,
             game_type: parts.game_type,
         },
+        payload_compression_header: parts.payload_compression_header,
         payload: parts.payload,
     })
 }
@@ -44,6 +45,7 @@ pub fn save_as(save_game: &SaveGame, target: SaveVersion) -> std::result::Result
             requires_pol: save_game.header.requires_pol,
             file_info: save_game.header.file_info.clone(),
             game_type: save_game.header.game_type,
+            payload_compression_header: save_game.payload_compression_header,
             payload: save_game.payload.clone(),
         },
         profile,
