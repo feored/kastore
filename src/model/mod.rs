@@ -10,5 +10,5 @@ pub use map_info::{
     VictoryConditionKind, WorldDate,
 };
 pub use player::{PlayerColor, PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, Race};
-pub use save_game::{PayloadCompressionHeader, SaveGame, SaveHeader};
+pub use save_game::{BodyCompressionHeader, SaveGame, SaveHeader};
 pub use supported_language::SupportedLanguage;

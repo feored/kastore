@@ -4,7 +4,7 @@ use crate::model::{GameType, MapInfo};
 use crate::version::SaveVersion;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct PayloadCompressionHeader {
+pub struct BodyCompressionHeader {
     pub raw_size: u32,
     pub zip_size: u32,
     pub compression_format_version: u16,
@@ -15,7 +15,7 @@ pub struct PayloadCompressionHeader {
 pub struct SaveHeader {
     pub requires_pol: bool,
     /// Summary metadata from the outer save header (`HeaderSAV` / `Maps::FileInfo`).
-    /// Some of these values are also stored inside the payload and may be overridden
+    /// Some of these values are also stored inside the body and may be overridden
     /// when the save is fully loaded by the game.
     pub file_info: MapInfo,
     pub game_type: GameType,
@@ -25,10 +25,10 @@ pub struct SaveHeader {
 pub struct SaveGame {
     pub source_version: SaveVersion,
     pub header: SaveHeader,
-    /// Metadata from the compressed payload wrapper in the save container.
-    pub payload_compression_header: PayloadCompressionHeader,
-    /// Decompressed gameplay payload bytes from the save's compressed payload chunk.
-    pub payload: Vec<u8>,
+    /// Metadata from the compressed body wrapper in the save file.
+    pub compression_header: BodyCompressionHeader,
+    /// Decompressed gameplay body bytes from the save file's compressed body chunk.
+    pub body: Vec<u8>,
 }
 
 impl Display for SaveGame {
@@ -37,32 +37,31 @@ impl Display for SaveGame {
         writeln!(f, "requires_pol: {}", self.header.requires_pol)?;
         write!(f, "{}", self.header.file_info)?;
         writeln!(f, "game type: {}", self.header.game_type)?;
-        writeln!(f, "payload bytes (decompressed): {}", self.payload.len())?;
+        writeln!(f, "body bytes (decompressed): {}", self.body.len())?;
         writeln!(
             f,
-            "payload wrapper raw size: {}",
-            self.payload_compression_header.raw_size
+            "body wrapper raw size: {}",
+            self.compression_header.raw_size
         )?;
         writeln!(
             f,
-            "payload wrapper zip size: {}",
-            self.payload_compression_header.zip_size
+            "body wrapper zip size: {}",
+            self.compression_header.zip_size
         )?;
         writeln!(
             f,
-            "payload wrapper compression format version: {}",
-            self.payload_compression_header
-                .compression_format_version
+            "body wrapper compression format version: {}",
+            self.compression_header.compression_format_version
         )?;
         writeln!(
             f,
-            "payload wrapper reserved: {}",
-            self.payload_compression_header.reserved
+            "body wrapper reserved: {}",
+            self.compression_header.reserved
         )?;
         writeln!(
             f,
-            "payload has end marker 0xFF03: {}",
-            self.payload.ends_with(&[0xFF, 0x03])
+            "body has end marker 0xFF03: {}",
+            self.body.ends_with(&[0xFF, 0x03])
         )
     }
 }

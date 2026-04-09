@@ -1,15 +1,18 @@
+pub(crate) mod body;
+mod file;
+
 use crate::Error;
 use crate::model::{SaveGame, SaveHeader};
 use crate::version::{SaveVersion, profile_for};
 
 pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
-    let save_version = crate::container::detect_save_version(bytes)?;
+    let save_version = file::detect_save_version(bytes)?;
     let Some(profile) = profile_for(save_version) else {
         return Err(Error::UnsupportedSaveVersion {
             version: save_version.as_u16(),
         });
     };
-    let parts = crate::container::decode_container(bytes, profile)?;
+    let parts = file::decode_file(bytes, profile)?;
 
     Ok(SaveGame {
         source_version: save_version,
@@ -18,8 +21,8 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
             file_info: parts.file_info,
             game_type: parts.game_type,
         },
-        payload_compression_header: parts.payload_compression_header,
-        payload: parts.payload,
+        compression_header: parts.body_compression_header,
+        body: parts.body,
     })
 }
 
@@ -40,13 +43,13 @@ pub fn save_as(save_game: &SaveGame, target: SaveVersion) -> std::result::Result
         });
     }
 
-    crate::container::encode_container(
-        &crate::container::ContainerParts {
+    file::encode_file(
+        &file::FileParts {
             requires_pol: save_game.header.requires_pol,
             file_info: save_game.header.file_info.clone(),
             game_type: save_game.header.game_type,
-            payload_compression_header: save_game.payload_compression_header,
-            payload: save_game.payload.clone(),
+            body_compression_header: save_game.compression_header,
+            body: save_game.body.clone(),
         },
         profile,
     )

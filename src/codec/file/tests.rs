@@ -6,36 +6,36 @@ use flate2::write::ZlibEncoder;
 use crate::version::{SaveVersion, profile_for};
 use crate::{ParseError, ParseErrorKind, ParseSection};
 
-use super::{decode_container, encode_container};
+use super::{decode_file, encode_file};
 
 fn push_string(bytes: &mut Vec<u8>, value: &[u8]) {
     bytes.extend_from_slice(&(value.len() as u32).to_be_bytes());
     bytes.extend_from_slice(value);
 }
 
-fn minimal_container_bytes(
+fn minimal_file_bytes(
     save_version: SaveVersion,
     version_string: &[u8],
     creator_notes: Option<&[u8]>,
     game_type: i32,
-    payload: &[u8],
+    body: &[u8],
 ) -> Vec<u8> {
-    minimal_container_bytes_with_payload_offset(
+    minimal_file_bytes_with_body_offset(
         save_version,
         version_string,
         creator_notes,
         game_type,
-        payload,
+        body,
     )
     .0
 }
 
-fn minimal_container_bytes_with_payload_offset(
+fn minimal_file_bytes_with_body_offset(
     save_version: SaveVersion,
     version_string: &[u8],
     creator_notes: Option<&[u8]>,
     game_type: i32,
-    payload: &[u8],
+    body: &[u8],
 ) -> (Vec<u8>, usize) {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(&[0xFF, 0x03]);
@@ -74,37 +74,37 @@ fn minimal_container_bytes_with_payload_offset(
     }
 
     bytes.extend_from_slice(&game_type.to_be_bytes());
-    let payload_offset = bytes.len();
-    push_payload_chunk(&mut bytes, payload);
+    let body_offset = bytes.len();
+    push_body_chunk(&mut bytes, body);
 
-    (bytes, payload_offset)
+    (bytes, body_offset)
 }
 
-fn push_payload_chunk(bytes: &mut Vec<u8>, payload: &[u8]) {
+fn push_body_chunk(bytes: &mut Vec<u8>, body: &[u8]) {
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-    encoder.write_all(payload).unwrap();
+    encoder.write_all(body).unwrap();
     let compressed = encoder.finish().unwrap();
 
-    bytes.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&(body.len() as u32).to_be_bytes());
     bytes.extend_from_slice(&(compressed.len() as u32).to_be_bytes());
     bytes.extend_from_slice(&0u16.to_be_bytes());
     bytes.extend_from_slice(&0u16.to_be_bytes());
     bytes.extend_from_slice(&compressed);
 }
 
-fn decode(bytes: &[u8], save_version: SaveVersion) -> Result<super::ContainerParts, crate::Error> {
+fn decode(bytes: &[u8], save_version: SaveVersion) -> Result<super::FileParts, crate::Error> {
     let profile = profile_for(save_version).expect("supported test version");
-    decode_container(bytes, profile)
+    decode_file(bytes, profile)
 }
 
 fn decode_then_encode(bytes: &[u8], save_version: SaveVersion) -> Result<Vec<u8>, crate::Error> {
     let parts = decode(bytes, save_version)?;
     let profile = profile_for(save_version).expect("supported test version");
-    encode_container(&parts, profile)
+    encode_file(&parts, profile)
 }
 
 #[test]
-fn decode_container_rejects_invalid_magic() {
+fn decode_file_rejects_invalid_magic() {
     let bytes = [0x00, 0x00, 0x12, 0x34];
     let error = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap_err();
 
@@ -123,7 +123,7 @@ fn decode_container_rejects_invalid_magic() {
 }
 
 #[test]
-fn decode_container_returns_error_for_truncated_map_filename() {
+fn decode_file_returns_error_for_truncated_map_filename() {
     let bytes = [
         0xFF, 0x03, // magic
         0x00, 0x00, 0x00, 0x05, // version string length
@@ -149,7 +149,7 @@ fn decode_container_returns_error_for_truncated_map_filename() {
 }
 
 #[test]
-fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
+fn decode_file_allows_non_utf8_string_bytes_and_ignores_version_string() {
     let mut bytes = vec![
         0xFF, 0x03, // magic
         0x00, 0x00, 0x00, 0x05, // version string length
@@ -190,29 +190,29 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         0x02, // main language
         0x00, 0x00, 0x00, 0x05, // game type
     ];
-    push_payload_chunk(&mut bytes, &[0xDE, 0xAD, 0xBE, 0xEF]);
+    push_body_chunk(&mut bytes, &[0xDE, 0xAD, 0xBE, 0xEF]);
 
-    let container = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap();
+    let file = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap();
 
-    assert_eq!(container.file_info.filename.as_bytes(), &[0xFF, 0xFE]);
-    assert_eq!(container.file_info.name.as_bytes(), b"A\0B");
-    assert_eq!(container.file_info.player_slots.len(), 2);
+    assert_eq!(file.file_info.filename.as_bytes(), &[0xFF, 0xFE]);
+    assert_eq!(file.file_info.name.as_bytes(), b"A\0B");
+    assert_eq!(file.file_info.player_slots.len(), 2);
     assert_eq!(
-        container.file_info.player_slots[0],
+        file.file_info.player_slots[0],
         crate::model::PlayerSlotInfo {
             race: crate::model::Race::Knight,
             allies: crate::model::PlayerColorsSet::from_bits(0x05),
         }
     );
     assert_eq!(
-        container.file_info.player_slots[1],
+        file.file_info.player_slots[1],
         crate::model::PlayerSlotInfo {
             race: crate::model::Race::Necromancer,
             allies: crate::model::PlayerColorsSet::from_bits(0x06),
         }
     );
     assert_eq!(
-        container.file_info.player_slot(0),
+        file.file_info.player_slot(0),
         Some(crate::model::PlayerSlotView {
             slot_index: 0,
             color: Some(crate::model::PlayerColor::Blue),
@@ -221,7 +221,7 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         })
     );
     assert_eq!(
-        container.file_info.player_slot(1),
+        file.file_info.player_slot(1),
         Some(crate::model::PlayerSlotView {
             slot_index: 1,
             color: Some(crate::model::PlayerColor::Green),
@@ -230,11 +230,11 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         })
     );
     assert_eq!(
-        container.file_info.kingdom_colors,
+        file.file_info.kingdom_colors,
         crate::model::PlayerColorsSet::from_bits(0x11)
     );
     assert_eq!(
-        container.file_info.victory_condition,
+        file.file_info.victory_condition,
         crate::model::VictoryConditionData {
             kind: crate::model::VictoryConditionKind::CollectEnoughGold,
             comp_also_wins: true,
@@ -243,39 +243,39 @@ fn decode_container_allows_non_utf8_string_bytes_and_ignores_version_string() {
         }
     );
     assert_eq!(
-        container.file_info.loss_condition,
+        file.file_info.loss_condition,
         crate::model::LossConditionData {
             kind: crate::model::LossConditionKind::LossHero,
             params: [0xABCD, 0x0009],
         }
     );
-    assert_eq!(container.file_info.timestamp, 0xDEADBEEF);
+    assert_eq!(file.file_info.timestamp, 0xDEADBEEF);
     assert_eq!(
-        container.file_info.version,
+        file.file_info.version,
         crate::model::GameVersion::Unknown(7)
     );
     assert_eq!(
-        container.file_info.main_language,
+        file.file_info.main_language,
         crate::model::SupportedLanguage::POLISH
     );
-    assert_eq!(container.file_info.creator_notes, None);
+    assert_eq!(file.file_info.creator_notes, None);
     assert_eq!(
-        container.game_type,
+        file.game_type,
         crate::model::GameType::from_i32(0x0000_0005)
     );
-    assert_eq!(container.payload, vec![0xDE, 0xAD, 0xBE, 0xEF]);
+    assert_eq!(file.body, vec![0xDE, 0xAD, 0xBE, 0xEF]);
 }
 
 #[test]
-fn decode_container_rejects_invalid_payload_compression_version() {
-    let (mut bytes, payload_offset) = minimal_container_bytes_with_payload_offset(
+fn decode_file_rejects_invalid_body_compression_version() {
+    let (mut bytes, body_offset) = minimal_file_bytes_with_body_offset(
         SaveVersion::FORMAT_VERSION_1111_RELEASE,
         b"10032",
         None,
         0x0000_0002,
         &[0xFF, 0x03],
     );
-    let compression_version_offset = payload_offset + 8;
+    let compression_version_offset = body_offset + 8;
     bytes[compression_version_offset] = 0x00;
     bytes[compression_version_offset + 1] = 0x01;
 
@@ -284,8 +284,8 @@ fn decode_container_rejects_invalid_payload_compression_version() {
     assert_eq!(
         error,
         crate::Error::Parse(ParseError {
-            section: ParseSection::Payload,
-            field: "payload compression format version",
+            section: ParseSection::Body,
+            field: "body compression format version",
             offset: compression_version_offset,
             kind: ParseErrorKind::UnexpectedValue {
                 expected: "0",
@@ -296,34 +296,34 @@ fn decode_container_rejects_invalid_payload_compression_version() {
 }
 
 #[test]
-fn decode_container_rejects_payload_size_mismatch() {
-    let (mut bytes, payload_offset) = minimal_container_bytes_with_payload_offset(
+fn decode_file_rejects_body_size_mismatch() {
+    let (mut bytes, body_offset) = minimal_file_bytes_with_body_offset(
         SaveVersion::FORMAT_VERSION_1111_RELEASE,
         b"10032",
         None,
         0x0000_0002,
         &[0xAA, 0xBB, 0xCC],
     );
-    bytes[payload_offset..payload_offset + 4].copy_from_slice(&5u32.to_be_bytes());
+    bytes[body_offset..body_offset + 4].copy_from_slice(&5u32.to_be_bytes());
 
     let error = decode(&bytes, SaveVersion::FORMAT_VERSION_1111_RELEASE).unwrap_err();
 
     assert_eq!(
         error,
         crate::Error::Parse(ParseError {
-            section: ParseSection::Payload,
-            field: "payload decompressed size",
-            offset: payload_offset,
+            section: ParseSection::Body,
+            field: "body decompressed size",
+            offset: body_offset,
             kind: ParseErrorKind::InvalidValue {
-                message: "decompressed payload size does not match raw size",
+                message: "decompressed body size does not match raw size",
             },
         })
     );
 }
 
 #[test]
-fn encode_container_round_trips_v10033_creator_notes() {
-    let bytes = minimal_container_bytes(
+fn encode_file_round_trips_v10033_creator_notes() {
+    let bytes = minimal_file_bytes(
         SaveVersion::FORMAT_VERSION_1150_RELEASE,
         b"10033",
         Some(&[0xFF, 0x00, b'A']),

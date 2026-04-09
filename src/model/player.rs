@@ -142,7 +142,7 @@ impl Display for PlayerColor {
     }
 }
 
-/// Serialized per-slot payload. Slot identity is derived from position in `MapInfo::player_slots`.
+/// Serialized per-slot body data. Slot identity is derived from position in `MapInfo::player_slots`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PlayerSlotInfo {
     pub race: Race,

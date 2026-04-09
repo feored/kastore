@@ -1,5 +1,4 @@
 pub mod codec;
-pub(crate) mod container;
 pub(crate) mod internal;
 pub mod model;
 pub mod version;

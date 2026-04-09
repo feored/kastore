@@ -16,17 +16,14 @@ fn save_round_trips_loaded_fixture() {
     );
     assert_eq!(reloaded.source_version, save_game.source_version);
     assert_eq!(reloaded.header, save_game.header);
-    assert_eq!(reloaded.payload, save_game.payload);
+    assert_eq!(reloaded.body, save_game.body);
     assert_eq!(
-        reloaded.payload_compression_header.raw_size as usize,
-        reloaded.payload.len()
+        reloaded.compression_header.raw_size as usize,
+        reloaded.body.len()
     );
-    assert_eq!(
-        reloaded.payload_compression_header.compression_format_version,
-        0
-    );
-    assert_eq!(reloaded.payload_compression_header.reserved, 0);
-    assert!(reloaded.payload_compression_header.zip_size > 0);
+    assert_eq!(reloaded.compression_header.compression_format_version, 0);
+    assert_eq!(reloaded.compression_header.reserved, 0);
+    assert!(reloaded.compression_header.zip_size > 0);
 }
 
 #[test]
