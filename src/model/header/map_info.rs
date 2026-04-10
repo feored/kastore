@@ -4,6 +4,7 @@ use crate::SaveString;
 
 use super::{PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, SupportedLanguage};
 
+/// Map version marker stored in `Maps::FileInfo`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GameVersion {
     #[default]
@@ -14,6 +15,7 @@ pub enum GameVersion {
 }
 
 impl GameVersion {
+    /// Build from the raw save value.
     pub const fn from_u32(value: u32) -> Self {
         match value {
             0 => GameVersion::SuccessionWars,
@@ -23,6 +25,7 @@ impl GameVersion {
         }
     }
 
+    /// Return the raw save value.
     pub const fn to_u32(self) -> u32 {
         match self {
             GameVersion::SuccessionWars => 0,
@@ -33,13 +36,18 @@ impl GameVersion {
     }
 }
 
+/// In-game date stored in the save header.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct WorldDate {
+    /// Day within the current week.
     pub day: u32,
+    /// Week within the current month.
     pub week: u32,
+    /// Month number.
     pub month: u32,
 }
 
+/// Game difficulty stored as a fheroes2 byte value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Difficulty {
     #[default]
@@ -52,6 +60,7 @@ pub enum Difficulty {
 }
 
 impl Difficulty {
+    /// Build from the raw save byte.
     pub const fn from_byte(value: u8) -> Self {
         match value {
             0 => Difficulty::Easy,
@@ -63,6 +72,7 @@ impl Difficulty {
         }
     }
 
+    /// Return the raw save byte.
     pub const fn to_byte(self) -> u8 {
         match self {
             Difficulty::Easy => 0,
@@ -75,6 +85,7 @@ impl Difficulty {
     }
 }
 
+/// Victory condition kind stored in `Maps::FileInfo`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum VictoryConditionKind {
     #[default]
@@ -88,6 +99,7 @@ pub enum VictoryConditionKind {
 }
 
 impl VictoryConditionKind {
+    /// Build from the raw save byte.
     pub const fn from_byte(value: u8) -> Self {
         match value {
             0 => VictoryConditionKind::DefeatEveryone,
@@ -100,6 +112,7 @@ impl VictoryConditionKind {
         }
     }
 
+    /// Return the raw save byte.
     pub const fn to_byte(self) -> u8 {
         match self {
             VictoryConditionKind::DefeatEveryone => 0,
@@ -113,14 +126,20 @@ impl VictoryConditionKind {
     }
 }
 
+/// Victory condition data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct VictoryConditionData {
+    /// Victory condition selector.
     pub kind: VictoryConditionKind,
+    /// Whether computer players may also satisfy this condition.
     pub comp_also_wins: bool,
+    /// Whether normal defeat-all victory remains enabled.
     pub allow_normal_victory: bool,
+    /// Raw condition parameters. Their meaning depends on `kind`.
     pub params: [u16; 2],
 }
 
+/// Loss condition kind stored in `Maps::FileInfo`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LossConditionKind {
     #[default]
@@ -132,6 +151,7 @@ pub enum LossConditionKind {
 }
 
 impl LossConditionKind {
+    /// Build from the raw save byte.
     pub const fn from_byte(value: u8) -> Self {
         match value {
             0 => LossConditionKind::LossEverything,
@@ -142,6 +162,7 @@ impl LossConditionKind {
         }
     }
 
+    /// Return the raw save byte.
     pub const fn to_byte(self) -> u8 {
         match self {
             LossConditionKind::LossEverything => 0,
@@ -153,37 +174,63 @@ impl LossConditionKind {
     }
 }
 
+/// Loss condition data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct LossConditionData {
+    /// Loss condition selector.
     pub kind: LossConditionKind,
+    /// Raw condition parameters. Their meaning depends on `kind`.
     pub params: [u16; 2],
 }
 
+/// Summary map metadata from the outer save header.
+///
+/// fheroes2 also stores map info inside the body settings. The outer copy is
+/// useful for listing saves without decoding the full body.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MapInfo {
+    /// Source map filename.
     pub filename: SaveString,
+    /// Display name.
     pub name: SaveString,
+    /// Map description.
     pub description: SaveString,
+    /// Creator notes added by save format `10033`.
     pub creator_notes: Option<SaveString>,
+    /// Map width in tiles.
     pub width: u16,
+    /// Map height in tiles.
     pub height: u16,
+    /// Starting difficulty.
     pub difficulty: Difficulty,
     /// Slot order matters: index 0 is blue, 1 is green, and so on.
     pub player_slots: Vec<PlayerSlotInfo>,
+    /// Colors with active kingdoms.
     pub kingdom_colors: PlayerColorsSet,
+    /// Colors selectable by humans.
     pub colors_available_for_humans: PlayerColorsSet,
+    /// Colors selectable by computer players.
     pub colors_available_for_comp: PlayerColorsSet,
+    /// Colors whose race is randomized.
     pub colors_of_random_races: PlayerColorsSet,
+    /// Victory condition summary.
     pub victory_condition: VictoryConditionData,
+    /// Loss condition summary.
     pub loss_condition: LossConditionData,
+    /// Raw fheroes2 timestamp.
     pub timestamp: u32,
+    /// Whether the first castle starts with a hero.
     pub start_with_hero_in_first_castle: bool,
+    /// Map/game version marker.
     pub version: GameVersion,
+    /// Current in-game date summary.
     pub world_date: WorldDate,
+    /// Main language.
     pub main_language: SupportedLanguage,
 }
 
 impl MapInfo {
+    /// Return a player slot with its color derived from its stored index.
     pub fn player_slot(&self, slot_index: u8) -> Option<PlayerSlotView> {
         self.player_slots
             .get(usize::from(slot_index))

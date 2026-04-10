@@ -1,20 +1,22 @@
 use std::fmt::{Display, Formatter};
 
+/// Error returned by save decoding and encoding.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
-    UnsupportedSaveVersion {
-        version: u16,
-    },
+    /// The numeric save format version is not supported.
+    UnsupportedSaveVersion { version: u16 },
+    /// A parse error with section, field, and offset.
     Parse(ParseError),
+    /// A typed model value cannot be encoded.
     InvalidModel {
         field: &'static str,
         message: &'static str,
     },
-    NotImplemented {
-        feature: &'static str,
-    },
+    /// Requested behavior is known but not implemented.
+    NotImplemented { feature: &'static str },
 }
 
+/// Top-level section where parsing failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParseSection {
     Container,
@@ -42,11 +44,16 @@ impl Display for ParseSection {
     }
 }
 
+/// Parse failure with the field and byte offset that failed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseError {
+    /// Save section being parsed.
     pub section: ParseSection,
+    /// Field being parsed.
     pub field: &'static str,
+    /// Byte offset within the current reader.
     pub offset: usize,
+    /// Error details.
     pub kind: ParseErrorKind,
 }
 
@@ -62,22 +69,20 @@ impl Display for ParseError {
     }
 }
 
+/// Specific parse failure kind.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseErrorKind {
-    Truncated {
-        needed: usize,
-        remaining: usize,
-    },
+    /// Input ended before enough bytes were available.
+    Truncated { needed: usize, remaining: usize },
+    /// A required sentinel or marker had another value.
     UnexpectedValue {
         expected: &'static str,
         actual: String,
     },
-    InvalidValue {
-        message: &'static str,
-    },
-    Unsupported {
-        message: &'static str,
-    },
+    /// A value was present but invalid for this field.
+    InvalidValue { message: &'static str },
+    /// A valid value refers to unsupported behavior.
+    Unsupported { message: &'static str },
 }
 
 impl Display for ParseErrorKind {

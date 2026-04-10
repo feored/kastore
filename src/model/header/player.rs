@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+/// fheroes2 race value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Race {
     #[default]
@@ -16,6 +17,7 @@ pub enum Race {
 }
 
 impl Race {
+    /// Build from the raw save byte.
     pub const fn from_byte(value: u8) -> Self {
         match value {
             0x00 => Race::None,
@@ -31,6 +33,7 @@ impl Race {
         }
     }
 
+    /// Return the raw save byte.
     pub const fn to_byte(self) -> u8 {
         match self {
             Race::None => 0x00,
@@ -64,6 +67,7 @@ impl Display for Race {
     }
 }
 
+/// Player color bit value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlayerColor {
     #[default]
@@ -85,6 +89,7 @@ impl From<u8> for PlayerColor {
 }
 
 impl PlayerColor {
+    /// Convert a zero-based player slot index to a color.
     pub const fn from_index(index: u8) -> Option<Self> {
         match index {
             0 => Some(PlayerColor::Blue),
@@ -97,6 +102,7 @@ impl PlayerColor {
         }
     }
 
+    /// Build from the raw color bit value.
     pub const fn from_bits(value: u8) -> Self {
         match value {
             0x00 => PlayerColor::None,
@@ -111,6 +117,7 @@ impl PlayerColor {
         }
     }
 
+    /// Return the raw color bit value.
     pub const fn bits(self) -> u8 {
         match self {
             PlayerColor::None => 0x00,
@@ -145,19 +152,27 @@ impl Display for PlayerColor {
 /// Serialized per-slot body data. Slot identity is derived from position in `MapInfo::player_slots`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PlayerSlotInfo {
+    /// Slot race setting.
     pub race: Race,
+    /// Allied player colors.
     pub allies: PlayerColorsSet,
 }
 
+/// Player slot plus the color implied by its index.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerSlotView {
+    /// Zero-based slot index.
     pub slot_index: usize,
+    /// Color for known fheroes2 player slots.
     pub color: Option<PlayerColor>,
+    /// Slot race setting.
     pub race: Race,
+    /// Allied player colors.
     pub allies: PlayerColorsSet,
 }
 
 impl PlayerSlotView {
+    /// Build a view from serialized slot data.
     pub fn from_stored(slot_index: usize, slot: PlayerSlotInfo) -> Self {
         Self {
             slot_index,
@@ -191,32 +206,39 @@ impl Display for PlayerSlotView {
     }
 }
 
+/// Bitset of player colors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PlayerColorsSet(u8);
 
 impl PlayerColorsSet {
     pub const EMPTY: Self = Self(0);
 
+    /// Build from the raw color bitset.
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
 
+    /// Return the raw color bitset.
     pub const fn bits(self) -> u8 {
         self.0
     }
 
+    /// Build a set containing one color.
     pub const fn from_color(color: PlayerColor) -> Self {
         Self(color.bits())
     }
 
+    /// Return whether `color` is present.
     pub const fn contains(self, color: PlayerColor) -> bool {
         (self.0 & color.bits()) != 0
     }
 
+    /// Add `color` to the set.
     pub fn insert(&mut self, color: PlayerColor) {
         self.0 |= color.bits();
     }
 
+    /// Remove `color` from the set.
     pub fn remove(&mut self, color: PlayerColor) {
         self.0 &= !(color.bits());
     }

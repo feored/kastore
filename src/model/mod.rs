@@ -1,3 +1,5 @@
+//! Public save model types.
+
 mod header;
 mod save_game;
 mod world;

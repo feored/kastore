@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+/// fheroes2 save format version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SaveVersion(u16);
 
@@ -32,10 +33,12 @@ impl SaveVersion {
     pub const LAST_SUPPORTED_FORMAT_VERSION: Self = Self::FORMAT_VERSION_1005_RELEASE;
     pub const CURRENT_FORMAT_VERSION: Self = Self::FORMAT_VERSION_1150_RELEASE;
 
+    /// Build from the raw save version number.
     pub const fn from_u16(value: u16) -> Self {
         Self(value)
     }
 
+    /// Return the raw save version number.
     pub const fn as_u16(self) -> u16 {
         self.0
     }
@@ -65,28 +68,35 @@ impl Display for SaveVersion {
     }
 }
 
+/// Version-specific map-info layout.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MapInfoRevision {
     V10024,
     V10033,
 }
 
+/// Decoding profile for a supported save format version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VersionProfile {
+    /// Save format version.
     pub save_version: SaveVersion,
+    /// `Maps::FileInfo` layout revision.
     pub map_info_revision: MapInfoRevision,
 }
 
+/// Decoding profile for save format `10032`.
 pub const PROFILE_10032: VersionProfile = VersionProfile {
     save_version: SaveVersion::FORMAT_VERSION_1111_RELEASE,
     map_info_revision: MapInfoRevision::V10024,
 };
 
+/// Decoding profile for the latest supported save format.
 pub const LATEST_PROFILE: VersionProfile = VersionProfile {
     save_version: SaveVersion::FORMAT_VERSION_1150_RELEASE,
     map_info_revision: MapInfoRevision::V10033,
 };
 
+/// Return the decoding profile for a supported save format version.
 pub const fn profile_for(save_version: SaveVersion) -> Option<VersionProfile> {
     if save_version.as_u16() == SaveVersion::FORMAT_VERSION_1111_RELEASE.as_u16() {
         Some(PROFILE_10032)

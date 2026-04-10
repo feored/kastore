@@ -1,3 +1,5 @@
+//! Read and write fheroes2 save files.
+
 pub mod codec;
 pub(crate) mod internal;
 pub mod model;

@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+/// fheroes2 game type bitfield.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct GameType(i32);
 
@@ -13,22 +14,27 @@ impl GameType {
     pub const LOAD_FILE: Self = Self(0x80);
     pub const MULTI: Self = Self::HOTSEAT;
 
+    /// Build from the raw save value.
     pub const fn from_i32(value: i32) -> Self {
         Self(value)
     }
 
+    /// Return the raw save value.
     pub const fn to_i32(self) -> i32 {
         self.0
     }
 
+    /// Return whether all bits in `flags` are set.
     pub const fn contains(self, flags: Self) -> bool {
         (self.0 & flags.0) == flags.0
     }
 
+    /// Set all bits in `flags`.
     pub fn insert(&mut self, flags: Self) {
         self.0 |= flags.0;
     }
 
+    /// Clear all bits in `flags`.
     pub fn remove(&mut self, flags: Self) {
         self.0 &= !flags.0;
     }

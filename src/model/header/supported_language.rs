@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+/// fheroes2 language id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct SupportedLanguage(u8);
 
@@ -27,14 +28,17 @@ impl SupportedLanguage {
     pub const UKRAINIAN: Self = Self(20);
     pub const VIETNAMESE: Self = Self(21);
 
+    /// Build from the raw save byte.
     pub const fn from_u8(value: u8) -> Self {
         Self(value)
     }
 
+    /// Return the raw save byte.
     pub const fn as_u8(self) -> u8 {
         self.0
     }
 
+    /// Return the known language name, if this id is known.
     pub const fn name(self) -> Option<&'static str> {
         match self.0 {
             0 => Some("English"),

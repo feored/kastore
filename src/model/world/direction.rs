@@ -1,5 +1,8 @@
 use std::fmt::Display;
 
+/// fheroes2 direction bitset.
+///
+/// In tile records this is also the passability mask.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DirectionSet(u16);
 
@@ -15,22 +18,27 @@ impl DirectionSet {
     pub const LEFT: Self = Self(0x0080);
     pub const CENTER: Self = Self(0x0100);
 
+    /// Build from the raw direction bitset.
     pub const fn from_bits(bits: u16) -> Self {
         Self(bits)
     }
 
+    /// Return the raw direction bitset.
     pub const fn bits(self) -> u16 {
         self.0
     }
 
+    /// Return whether all bits in `directions` are set.
     pub const fn contains(self, directions: Self) -> bool {
         (self.0 & directions.0) == directions.0
     }
 
+    /// Set all bits in `directions`.
     pub fn insert(&mut self, directions: Self) {
         self.0 |= directions.0;
     }
 
+    /// Clear all bits in `directions`.
     pub fn remove(&mut self, directions: Self) {
         self.0 &= !directions.0;
     }

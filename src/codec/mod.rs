@@ -5,6 +5,7 @@ use crate::Error;
 use crate::model::{SaveGame, SaveHeader};
 use crate::version::{SaveVersion, profile_for};
 
+/// Decode a supported fheroes2 save file.
 pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
     let save_version = file::detect_save_version(bytes)?;
     let Some(profile) = profile_for(save_version) else {
@@ -28,10 +29,17 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
     })
 }
 
+/// Encode a save using its original save format version.
+///
+/// Body sections not covered by the typed model are preserved through
+/// `SaveGame::body`.
 pub fn save(save_game: &SaveGame) -> std::result::Result<Vec<u8>, Error> {
     save_as(save_game, save_game.source_version)
 }
 
+/// Encode a save using a specific save format version.
+///
+/// Cross-version conversion is not implemented yet.
 pub fn save_as(save_game: &SaveGame, target: SaveVersion) -> std::result::Result<Vec<u8>, Error> {
     let Some(profile) = profile_for(target) else {
         return Err(Error::UnsupportedSaveVersion {
