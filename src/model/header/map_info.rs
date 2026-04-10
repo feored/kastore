@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use crate::SaveString;
-use crate::model::{PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, SupportedLanguage};
+
+use super::{PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, SupportedLanguage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum GameVersion {

@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
-use crate::model::{GameType, MapInfo};
 use crate::version::SaveVersion;
+
+use super::{SaveHeader, World};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct BodyCompressionHeader {
@@ -12,16 +13,6 @@ pub struct BodyCompressionHeader {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct SaveHeader {
-    pub requires_pol: bool,
-    /// Summary metadata from the outer save header (`HeaderSAV` / `Maps::FileInfo`).
-    /// Some of these values are also stored inside the body and may be overridden
-    /// when the save is fully loaded by the game.
-    pub file_info: MapInfo,
-    pub game_type: GameType,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SaveGame {
     pub source_version: SaveVersion,
     pub header: SaveHeader,
@@ -29,6 +20,8 @@ pub struct SaveGame {
     pub compression_header: BodyCompressionHeader,
     /// Decompressed gameplay body bytes from the save file's compressed body chunk.
     pub body: Vec<u8>,
+    /// Decoded body world data. Encoding still uses `body` until model-driven body writing exists.
+    pub world: World,
 }
 
 impl Display for SaveGame {
@@ -62,6 +55,7 @@ impl Display for SaveGame {
             f,
             "body has end marker 0xFF03: {}",
             self.body.ends_with(&[0xFF, 0x03])
-        )
+        )?;
+        write!(f, "{}", self.world)
     }
 }

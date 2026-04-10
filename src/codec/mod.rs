@@ -13,6 +13,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
         });
     };
     let parts = file::decode_file(bytes, profile)?;
+    let world = body::world::decode(&parts.body)?;
 
     Ok(SaveGame {
         source_version: save_version,
@@ -23,6 +24,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
         },
         compression_header: parts.body_compression_header,
         body: parts.body,
+        world,
     })
 }
 

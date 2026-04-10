@@ -1,14 +1,11 @@
-mod game_type;
-mod map_info;
-mod player;
+mod header;
 mod save_game;
-mod supported_language;
+mod world;
 
-pub use game_type::GameType;
-pub use map_info::{
-    Difficulty, GameVersion, LossConditionData, LossConditionKind, MapInfo, VictoryConditionData,
-    VictoryConditionKind, WorldDate,
+pub use header::{
+    Difficulty, GameType, GameVersion, LossConditionData, LossConditionKind, MapInfo, PlayerColor,
+    PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, Race, SaveHeader, SupportedLanguage,
+    VictoryConditionData, VictoryConditionKind, WorldDate,
 };
-pub use player::{PlayerColor, PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, Race};
-pub use save_game::{BodyCompressionHeader, SaveGame, SaveHeader};
-pub use supported_language::SupportedLanguage;
+pub use save_game::{BodyCompressionHeader, SaveGame};
+pub use world::{DirectionSet, LayerType, ObjectPart, Tile, World};
