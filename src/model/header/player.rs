@@ -34,6 +34,32 @@ impl Race {
         }
     }
 
+    /// Build from the raw save `i32`.
+    ///
+    /// Hero and castle records serialize race as `i32be` even though the
+    /// logical race value is still the same byte-sized bitflag.
+    pub const fn from_i32(value: i32) -> Self {
+        match value {
+            0x00 => Race::None,
+            0x01 => Race::Knight,
+            0x02 => Race::Barbarian,
+            0x04 => Race::Sorceress,
+            0x08 => Race::Warlock,
+            0x10 => Race::Wizard,
+            0x20 => Race::Necromancer,
+            0x40 => Race::Multi,
+            0x80 => Race::Random,
+            other => {
+                if other >= 0 && other <= u8::MAX as i32 {
+                    Race::Unknown(other as u8)
+                }
+                else {
+                    Race::Unknown(0)
+                }
+            }
+        }
+    }
+
     /// Return the raw save byte.
     pub const fn to_byte(self) -> u8 {
         match self {
@@ -47,6 +73,22 @@ impl Race {
             Race::Multi => 0x40,
             Race::Random => 0x80,
             Race::Unknown(value) => value,
+        }
+    }
+
+    /// Return the raw save `i32`.
+    pub const fn to_i32(self) -> i32 {
+        match self {
+            Race::None => 0x00,
+            Race::Knight => 0x01,
+            Race::Barbarian => 0x02,
+            Race::Sorceress => 0x04,
+            Race::Warlock => 0x08,
+            Race::Wizard => 0x10,
+            Race::Necromancer => 0x20,
+            Race::Multi => 0x40,
+            Race::Random => 0x80,
+            Race::Unknown(value) => value as i32,
         }
     }
 }

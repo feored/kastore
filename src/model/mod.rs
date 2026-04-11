@@ -10,4 +10,8 @@ pub use header::{
     VictoryConditionData, VictoryConditionKind, WorldDate,
 };
 pub use save_game::{BodyCompressionHeader, SaveGame};
-pub use world::{DirectionSet, LayerType, ObjectPart, Tile, World};
+pub use world::{
+    Army, Artifact, ArtifactID, Direction, DirectionSet, Hero, HeroBase, HeroID, HeroModeSet,
+    IndexObject, LayerType, MapPosition, MonsterType, ObjectPart, Path, Point, PrimarySkills,
+    RouteStep, SecondarySkill, Skill, SkillLevel, Spell, Tile, Troop, World,
+};

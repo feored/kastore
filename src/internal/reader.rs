@@ -44,6 +44,14 @@ impl<'a> Reader<'a> {
         Ok(u16::from_be_bytes([bytes[0], bytes[1]]))
     }
 
+    pub(crate) fn read_i16_be(
+        &mut self,
+        field_name: &'static str,
+    ) -> std::result::Result<i16, Error> {
+        let bytes = self.read_bytes(2, field_name)?;
+        Ok(i16::from_be_bytes([bytes[0], bytes[1]]))
+    }
+
     pub(crate) fn read_u32_be(
         &mut self,
         field_name: &'static str,
