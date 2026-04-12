@@ -1,7 +1,9 @@
 use crate::Error;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
-use crate::model::{DirectionSet, LayerType, ObjectPart, PlayerColor, PlayerColorsSet, Tile};
+use crate::model::header::player::{PlayerColor, PlayerColorsSet};
+use crate::model::world::tile::direction::DirectionSet;
+use crate::model::world::tile::{LayerType, ObjectPart, Tile};
 
 pub(super) fn decode(reader: &mut Reader<'_>) -> std::result::Result<Tile, Error> {
     let index: i32 = reader.read_i32_be("tile index")?;

@@ -1,8 +1,8 @@
-mod direction;
+pub mod direction;
 
-pub use direction::DirectionSet;
+use crate::model::header::player::{PlayerColor, PlayerColorsSet};
 
-use crate::model::{PlayerColor, PlayerColorsSet};
+use self::direction::DirectionSet;
 
 /// Serialized fheroes2 tile record.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

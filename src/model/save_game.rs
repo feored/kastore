@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use crate::version::SaveVersion;
 
-use super::{SaveHeader, World};
+use super::header::SaveHeader;
+use super::world::World;
 
 /// Metadata stored before the compressed save body.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

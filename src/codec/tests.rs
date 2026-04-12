@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::model::PlayerColor;
+use crate::model::header::player::{PlayerColor, PlayerSlotInfo};
 use crate::{Error, SaveGame, SaveString, SaveVersion, load, save, save_as};
 
 #[test]
@@ -104,7 +104,7 @@ fn save_display_includes_decoded_castles() {
 fn save_rejects_too_many_player_slots_without_panicking() {
     let mut save_game = SaveGame::default();
     save_game.source_version = SaveVersion::FORMAT_VERSION_1111_RELEASE;
-    save_game.header.file_info.player_slots = vec![crate::model::PlayerSlotInfo::default(); 256];
+    save_game.header.file_info.player_slots = vec![PlayerSlotInfo::default(); 256];
 
     let display = save_game.to_string();
     let error = save(&save_game).unwrap_err();

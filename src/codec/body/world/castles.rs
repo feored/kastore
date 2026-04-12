@@ -4,12 +4,13 @@ use crate::codec::body::world::heroes::{
 };
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
-use crate::model::CastleDwellings;
-use crate::model::MageGuild;
-use crate::model::Spell;
-use crate::model::{
-    Army, Castle, CastleBuildingSet, CastleModeSet, HeroBase, MapPosition, PlayerColor, Race,
-};
+use crate::model::header::player::{PlayerColor, Race};
+use crate::model::world::MapPosition;
+use crate::model::world::castles::buildings::{CastleBuildingSet, CastleDwellings};
+use crate::model::world::castles::{Castle, CastleModeSet, MageGuild};
+use crate::model::world::heroes::HeroBase;
+use crate::model::world::heroes::army::Army;
+use crate::model::world::heroes::spells::Spell;
 
 pub(super) fn decode(reader: &mut Reader<'_>) -> std::result::Result<Vec<Castle>, Error> {
     let count = reader.read_u32_be("castles count")?;

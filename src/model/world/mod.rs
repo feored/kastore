@@ -1,20 +1,9 @@
-mod castles;
-mod heroes;
-mod index_object;
-mod tile;
+pub mod castles;
+pub mod heroes;
+pub mod kingdoms;
+pub mod tile;
 
 use std::fmt::Display;
-
-pub use castles::{
-    Castle, CastleBuilding, CastleBuildingSet, CastleDwellingTier, CastleDwellings, CastleModeSet,
-    MageGuild,
-};
-pub use heroes::{
-    Army, Artifact, ArtifactID, Direction, Hero, HeroBase, HeroID, HeroModeSet, MonsterType, Path,
-    PrimarySkills, RouteStep, SecondarySkill, Skill, SkillLevel, Spell, Troop,
-};
-pub use index_object::IndexObject;
-pub use tile::{DirectionSet, LayerType, ObjectPart, Tile};
 
 /// Decoded fheroes2 `World` section.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -24,17 +13,17 @@ pub struct World {
     /// World height in tiles.
     pub height: i32,
     /// Tile records in fheroes2 serialization order.
-    pub tiles: Vec<Tile>,
+    pub tiles: Vec<tile::Tile>,
     /// Decoded non-placeholder hero roster.
-    pub heroes: Vec<Hero>,
+    pub heroes: Vec<heroes::Hero>,
     /// Decoded castle table.
-    pub castles: Vec<Castle>,
+    pub castles: Vec<castles::Castle>,
 }
 
 impl Display for World {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let active_heroes = self.heroes.iter().filter(|hero| hero.is_active()).count();
-        let in_play_heroes: Vec<&Hero> = self
+        let in_play_heroes: Vec<&heroes::Hero> = self
             .heroes
             .iter()
             .filter(|hero| hero.is_in_play())
@@ -88,4 +77,25 @@ pub struct MapPosition {
 pub struct Point {
     pub x: i32,
     pub y: i32,
+}
+
+/// Reference to a world object by tile index and object type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct IndexObject {
+    /// Absolute tile index in map order.
+    pub tile_index: i32,
+    /// Raw `MP2::MapObjectType` value.
+    pub object_type: u16,
+}
+
+/// Reference to a world object by tile index and object type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Funds {
+    pub wood: i32,
+    pub mercury: i32,
+    pub ore: i32,
+    pub sulfur: i32,
+    pub crystal: i32,
+    pub gems: i32,
+    pub gold: i32,
 }

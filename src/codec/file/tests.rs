@@ -3,6 +3,14 @@ use std::io::Write;
 use flate2::Compression;
 use flate2::write::ZlibEncoder;
 
+use crate::model::header::game_type::GameType;
+use crate::model::header::map_info::{
+    GameVersion, LossConditionData, LossConditionKind, VictoryConditionData, VictoryConditionKind,
+};
+use crate::model::header::player::{
+    PlayerColor, PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, Race,
+};
+use crate::model::header::supported_language::SupportedLanguage;
 use crate::version::{SaveVersion, profile_for};
 use crate::{ParseError, ParseErrorKind, ParseSection};
 
@@ -199,44 +207,44 @@ fn decode_file_allows_non_utf8_string_bytes_and_ignores_version_string() {
     assert_eq!(file.file_info.player_slots.len(), 2);
     assert_eq!(
         file.file_info.player_slots[0],
-        crate::model::PlayerSlotInfo {
-            race: crate::model::Race::Knight,
-            allies: crate::model::PlayerColorsSet::from_bits(0x05),
+        PlayerSlotInfo {
+            race: Race::Knight,
+            allies: PlayerColorsSet::from_bits(0x05),
         }
     );
     assert_eq!(
         file.file_info.player_slots[1],
-        crate::model::PlayerSlotInfo {
-            race: crate::model::Race::Necromancer,
-            allies: crate::model::PlayerColorsSet::from_bits(0x06),
+        PlayerSlotInfo {
+            race: Race::Necromancer,
+            allies: PlayerColorsSet::from_bits(0x06),
         }
     );
     assert_eq!(
         file.file_info.player_slot(0),
-        Some(crate::model::PlayerSlotView {
+        Some(PlayerSlotView {
             slot_index: 0,
-            color: Some(crate::model::PlayerColor::Blue),
-            race: crate::model::Race::Knight,
-            allies: crate::model::PlayerColorsSet::from_bits(0x05),
+            color: Some(PlayerColor::Blue),
+            race: Race::Knight,
+            allies: PlayerColorsSet::from_bits(0x05),
         })
     );
     assert_eq!(
         file.file_info.player_slot(1),
-        Some(crate::model::PlayerSlotView {
+        Some(PlayerSlotView {
             slot_index: 1,
-            color: Some(crate::model::PlayerColor::Green),
-            race: crate::model::Race::Necromancer,
-            allies: crate::model::PlayerColorsSet::from_bits(0x06),
+            color: Some(PlayerColor::Green),
+            race: Race::Necromancer,
+            allies: PlayerColorsSet::from_bits(0x06),
         })
     );
     assert_eq!(
         file.file_info.kingdom_colors,
-        crate::model::PlayerColorsSet::from_bits(0x11)
+        PlayerColorsSet::from_bits(0x11)
     );
     assert_eq!(
         file.file_info.victory_condition,
-        crate::model::VictoryConditionData {
-            kind: crate::model::VictoryConditionKind::CollectEnoughGold,
+        VictoryConditionData {
+            kind: VictoryConditionKind::CollectEnoughGold,
             comp_also_wins: true,
             allow_normal_victory: false,
             params: [0x0014, 0x1234],
@@ -244,25 +252,16 @@ fn decode_file_allows_non_utf8_string_bytes_and_ignores_version_string() {
     );
     assert_eq!(
         file.file_info.loss_condition,
-        crate::model::LossConditionData {
-            kind: crate::model::LossConditionKind::LossHero,
+        LossConditionData {
+            kind: LossConditionKind::LossHero,
             params: [0xABCD, 0x0009],
         }
     );
     assert_eq!(file.file_info.timestamp, 0xDEADBEEF);
-    assert_eq!(
-        file.file_info.version,
-        crate::model::GameVersion::Unknown(7)
-    );
-    assert_eq!(
-        file.file_info.main_language,
-        crate::model::SupportedLanguage::POLISH
-    );
+    assert_eq!(file.file_info.version, GameVersion::Unknown(7));
+    assert_eq!(file.file_info.main_language, SupportedLanguage::POLISH);
     assert_eq!(file.file_info.creator_notes, None);
-    assert_eq!(
-        file.game_type,
-        crate::model::GameType::from_i32(0x0000_0005)
-    );
+    assert_eq!(file.game_type, GameType::from_i32(0x0000_0005));
     assert_eq!(file.body, vec![0xDE, 0xAD, 0xBE, 0xEF]);
 }
 

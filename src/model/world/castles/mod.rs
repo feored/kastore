@@ -1,13 +1,15 @@
 use std::fmt::Display;
 
-mod buildings;
-
-pub use MageGuildSpells as MageGuild;
-pub use buildings::{CastleBuilding, CastleBuildingSet, CastleDwellingTier, CastleDwellings};
+pub mod buildings;
 
 use crate::internal::save_string::SaveString;
-use crate::model::Spell;
-use crate::model::{Army, HeroBase, PlayerColor, Race, world::MapPosition};
+use crate::model::header::player::{PlayerColor, Race};
+use crate::model::world::MapPosition;
+use crate::model::world::heroes::HeroBase;
+use crate::model::world::heroes::army::Army;
+use crate::model::world::heroes::spells::Spell;
+
+use self::buildings::{CastleBuildingSet, CastleDwellingTier, CastleDwellings};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Castle {
@@ -19,7 +21,7 @@ pub struct Castle {
     pub color_base: PlayerColor,
     pub captain: HeroBase,
     pub name: SaveString,
-    pub mage_guild_spells: MageGuildSpells,
+    pub mage_guild_spells: MageGuild,
     pub dwellings: CastleDwellings,
     pub army: Army,
 }
@@ -58,7 +60,7 @@ impl Display for Castle {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct MageGuildSpells {
+pub struct MageGuild {
     pub spells: Vec<Spell>,
     pub library_spells: Vec<Spell>,
 }

@@ -6,7 +6,8 @@ use crate::Error;
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
-use crate::model::{Tile, World};
+use crate::model::world::World;
+use crate::model::world::tile::Tile;
 
 pub(crate) fn decode(bytes: &[u8]) -> std::result::Result<World, Error> {
     Ok(decode_with_remaining_offset(bytes)?.0)

@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::model::PlayerColor;
+use crate::model::header::player::PlayerColor;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Army {

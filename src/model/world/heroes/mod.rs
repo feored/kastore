@@ -1,28 +1,26 @@
 use std::fmt::Display;
 
-mod army;
-mod artifact;
-mod id;
-mod modes;
-mod path;
-mod skills;
-mod spells;
-
-pub use army::{Army, MonsterType, Troop};
-pub use artifact::{Artifact, ArtifactID};
-pub use id::HeroID;
-pub use modes::HeroModeSet;
-pub use path::{Direction, Path, RouteStep};
-pub use skills::{SecondarySkill, Skill, SkillLevel};
-pub use spells::Spell;
+pub mod army;
+pub mod artifact;
+pub mod id;
+pub mod modes;
+pub mod path;
+pub mod skills;
+pub mod spells;
 
 use crate::{
-    SaveString,
-    model::{
-        PlayerColor, Race,
-        world::{IndexObject, MapPosition, Point},
-    },
+    internal::save_string::SaveString,
+    model::header::player::{PlayerColor, Race},
+    model::world::{IndexObject, MapPosition, Point},
 };
+
+use self::army::Army;
+use self::artifact::Artifact;
+use self::id::HeroID;
+use self::modes::HeroModeSet;
+use self::path::{Direction, Path};
+use self::skills::SecondarySkill;
+use self::spells::Spell;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Hero {

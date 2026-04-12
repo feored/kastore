@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use crate::SaveString;
 
-use super::{PlayerColorsSet, PlayerSlotInfo, PlayerSlotView, SupportedLanguage};
+use super::player::{PlayerColorsSet, PlayerSlotInfo, PlayerSlotView};
+use super::supported_language::SupportedLanguage;
 
 /// Map version marker stored in `Maps::FileInfo`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

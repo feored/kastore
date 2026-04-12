@@ -1,12 +1,20 @@
 use super::*;
 use crate::SaveString;
 use crate::internal::writer::Writer;
-use crate::model::{
-    Army, Artifact, ArtifactID, Castle, CastleBuilding, CastleBuildingSet, CastleDwellings,
-    CastleModeSet, Direction, DirectionSet, Hero, HeroBase, HeroID, HeroModeSet, IndexObject,
-    LayerType, MageGuild, MapPosition, MonsterType, ObjectPart, Path, PlayerColor, PlayerColorsSet,
-    Point, PrimarySkills, Race, RouteStep, SecondarySkill, Skill, SkillLevel, Spell, Tile, Troop,
-};
+use crate::model::header::player::{PlayerColor, PlayerColorsSet, Race};
+use crate::model::world::castles::buildings::{CastleBuilding, CastleBuildingSet, CastleDwellings};
+use crate::model::world::castles::{Castle, CastleModeSet, MageGuild};
+use crate::model::world::heroes::army::{Army, MonsterType, Troop};
+use crate::model::world::heroes::artifact::{Artifact, ArtifactID};
+use crate::model::world::heroes::id::HeroID;
+use crate::model::world::heroes::modes::HeroModeSet;
+use crate::model::world::heroes::path::{Direction, Path, RouteStep};
+use crate::model::world::heroes::skills::{SecondarySkill, Skill, SkillLevel};
+use crate::model::world::heroes::spells::Spell;
+use crate::model::world::heroes::{Hero, HeroBase, PrimarySkills};
+use crate::model::world::tile::direction::DirectionSet;
+use crate::model::world::tile::{LayerType, ObjectPart, Tile};
+use crate::model::world::{IndexObject, MapPosition, Point, World};
 
 fn sample_tile() -> Tile {
     Tile {

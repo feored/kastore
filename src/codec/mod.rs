@@ -2,7 +2,8 @@ pub(crate) mod body;
 mod file;
 
 use crate::Error;
-use crate::model::{SaveGame, SaveHeader};
+use crate::model::header::SaveHeader;
+use crate::model::save_game::SaveGame;
 use crate::version::{SaveVersion, profile_for};
 
 /// Decode a supported fheroes2 save file.

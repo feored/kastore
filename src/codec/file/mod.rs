@@ -10,11 +10,14 @@ use crate::SaveVersion;
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
-use crate::model::{
-    BodyCompressionHeader, Difficulty, GameType, GameVersion, LossConditionData, LossConditionKind,
-    MapInfo, PlayerColorsSet, PlayerSlotInfo, Race, SupportedLanguage, VictoryConditionData,
+use crate::model::header::game_type::GameType;
+use crate::model::header::map_info::{
+    Difficulty, GameVersion, LossConditionData, LossConditionKind, MapInfo, VictoryConditionData,
     VictoryConditionKind, WorldDate,
 };
+use crate::model::header::player::{PlayerColorsSet, PlayerSlotInfo, Race};
+use crate::model::header::supported_language::SupportedLanguage;
+use crate::model::save_game::BodyCompressionHeader;
 use crate::version::{MapInfoRevision, VersionProfile};
 
 pub(crate) const SAVE_FILE_MAGIC_NUMBER: u16 = 0xFF03;

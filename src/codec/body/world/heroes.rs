@@ -2,11 +2,16 @@ use crate::Error;
 use crate::SaveString;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
-use crate::model::{
-    Army, Artifact, ArtifactID, Direction, Hero, HeroBase, HeroID, HeroModeSet, IndexObject,
-    MapPosition, MonsterType, Path, PlayerColor, Point, PrimarySkills, Race, RouteStep,
-    SecondarySkill, Skill, SkillLevel, Spell, Troop,
-};
+use crate::model::header::player::{PlayerColor, Race};
+use crate::model::world::heroes::army::{Army, MonsterType, Troop};
+use crate::model::world::heroes::artifact::{Artifact, ArtifactID};
+use crate::model::world::heroes::id::HeroID;
+use crate::model::world::heroes::modes::HeroModeSet;
+use crate::model::world::heroes::path::{Direction, Path, RouteStep};
+use crate::model::world::heroes::skills::{SecondarySkill, Skill, SkillLevel};
+use crate::model::world::heroes::spells::Spell;
+use crate::model::world::heroes::{Hero, HeroBase, PrimarySkills};
+use crate::model::world::{IndexObject, MapPosition, Point};
 
 const EXPECTED_HEROES_COUNT: u32 = 73;
 
