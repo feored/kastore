@@ -21,11 +21,12 @@ pub(super) fn decode(reader: &mut Reader<'_>) -> std::result::Result<Vec<Castle>
 }
 
 pub(super) fn encode(writer: &mut Writer, castles: &[Castle]) -> std::result::Result<(), Error> {
-    writer.write_u32_be(len_to_u32(
-        castles.len(),
-        "world castles",
-        "castle count must fit in u32",
-    )?);
+    writer.write_u32_be(
+        u32::try_from(castles.len()).map_err(|_| Error::InvalidModel {
+            field: "world castles",
+            message: "castle count must fit in u32",
+        })?,
+    );
 
     for castle in castles {
         encode_castle(writer, castle)?;
@@ -114,19 +115,23 @@ fn encode_castle(writer: &mut Writer, castle: &Castle) -> std::result::Result<()
     encode_hero_base(writer, &castle.captain)?;
     writer.write_u8(castle.color_base.bits());
     writer.write_save_string(&castle.name);
-    writer.write_u32_be(len_to_u32(
-        castle.mage_guild_spells.spells.len(),
-        "castle mage guild spells",
-        "spell count must fit in u32",
-    )?);
+    writer.write_u32_be(
+        u32::try_from(castle.mage_guild_spells.spells.len()).map_err(|_| Error::InvalidModel {
+            field: "castle mage guild spells",
+            message: "spell count must fit in u32",
+        })?,
+    );
     for spell in &castle.mage_guild_spells.spells {
         writer.write_i32_be(spell.to_i32());
     }
-    writer.write_u32_be(len_to_u32(
-        castle.mage_guild_spells.library_spells.len(),
-        "castle mage guild library spells",
-        "spell count must fit in u32",
-    )?);
+    writer.write_u32_be(
+        u32::try_from(castle.mage_guild_spells.library_spells.len()).map_err(|_| {
+            Error::InvalidModel {
+                field: "castle mage guild library spells",
+                message: "spell count must fit in u32",
+            }
+        })?,
+    );
     for spell in &castle.mage_guild_spells.library_spells {
         writer.write_i32_be(spell.to_i32());
     }
@@ -137,12 +142,4 @@ fn encode_castle(writer: &mut Writer, castle: &Castle) -> std::result::Result<()
     encode_army(writer, &castle.army)?;
 
     Ok(())
-}
-
-fn len_to_u32(
-    len: usize,
-    field: &'static str,
-    message: &'static str,
-) -> std::result::Result<u32, Error> {
-    u32::try_from(len).map_err(|_| Error::InvalidModel { field, message })
 }

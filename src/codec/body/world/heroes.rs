@@ -164,19 +164,21 @@ pub(crate) fn encode_hero_base(
     writer.write_u32_be(base.modes.bits());
     writer.write_u32_be(base.spell_points);
     writer.write_u32_be(base.move_points);
-    writer.write_u32_be(len_to_u32(
-        base.spell_book.len(),
-        "hero spell book",
-        "spell count must fit in u32",
-    )?);
+    writer.write_u32_be(
+        u32::try_from(base.spell_book.len()).map_err(|_| Error::InvalidModel {
+            field: "hero spell book",
+            message: "spell count must fit in u32",
+        })?,
+    );
     for spell in &base.spell_book {
         writer.write_i32_be(spell.to_i32());
     }
-    writer.write_u32_be(len_to_u32(
-        base.bag_artifacts.len(),
-        "hero bag artifacts",
-        "artifact count must fit in u32",
-    )?);
+    writer.write_u32_be(u32::try_from(base.bag_artifacts.len()).map_err(|_| {
+        Error::InvalidModel {
+            field: "hero bag artifacts",
+            message: "artifact count must fit in u32",
+        }
+    })?);
     for artifact in &base.bag_artifacts {
         writer.write_i32_be(artifact.id.to_i32());
         writer.write_i32_be(artifact.ext);
@@ -219,11 +221,12 @@ fn encode_secondary_skills(
         });
     }
 
-    writer.write_u32_be(len_to_u32(
-        secondary_skills.len(),
-        "hero secondary skills",
-        "secondary skill count must fit in u32",
-    )?);
+    writer.write_u32_be(u32::try_from(secondary_skills.len()).map_err(|_| {
+        Error::InvalidModel {
+            field: "hero secondary skills",
+            message: "secondary skill count must fit in u32",
+        }
+    })?);
     for skill in secondary_skills {
         writer.write_i32_be(skill.id.to_i32());
         writer.write_i32_be(skill.level.to_i32());
@@ -292,11 +295,12 @@ fn decode_path(reader: &mut Reader<'_>) -> std::result::Result<Path, Error> {
 
 fn encode_path(writer: &mut Writer, path: &Path) -> std::result::Result<(), Error> {
     writer.write_byte_from_bool(path.hidden);
-    writer.write_u32_be(len_to_u32(
-        path.steps.len(),
-        "hero path steps",
-        "path step count must fit in u32",
-    )?);
+    writer.write_u32_be(
+        u32::try_from(path.steps.len()).map_err(|_| Error::InvalidModel {
+            field: "hero path steps",
+            message: "path step count must fit in u32",
+        })?,
+    );
     for step in &path.steps {
         writer.write_i32_be(step.from_index);
         writer.write_i32_be(step.direction.to_i32());
@@ -322,11 +326,12 @@ fn encode_visited_objects(
     writer: &mut Writer,
     visited_objects: &[IndexObject],
 ) -> std::result::Result<(), Error> {
-    writer.write_u32_be(len_to_u32(
-        visited_objects.len(),
-        "hero visited objects",
-        "visited object count must fit in u32",
-    )?);
+    writer.write_u32_be(
+        u32::try_from(visited_objects.len()).map_err(|_| Error::InvalidModel {
+            field: "hero visited objects",
+            message: "visited object count must fit in u32",
+        })?,
+    );
     for object in visited_objects {
         writer.write_i32_be(object.tile_index);
         writer.write_u16_be(object.object_type);
@@ -410,12 +415,4 @@ fn semantic_slot_index(hero: &Hero) -> std::result::Result<usize, Error> {
     }
 
     Ok(slot_index)
-}
-
-fn len_to_u32(
-    len: usize,
-    field: &'static str,
-    message: &'static str,
-) -> std::result::Result<u32, Error> {
-    u32::try_from(len).map_err(|_| Error::InvalidModel { field, message })
 }
