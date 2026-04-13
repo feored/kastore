@@ -42,6 +42,17 @@ impl SaveString {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// Return a debug-formatted, single-line excerpt truncated to `max_chars` characters.
+    pub(crate) fn brief(&self, max_chars: usize) -> String {
+        let single_line = self.to_string_lossy().replace(['\r', '\n'], " ");
+        let total_chars = single_line.chars().count();
+        let mut shortened: String = single_line.chars().take(max_chars).collect();
+        if total_chars > max_chars {
+            shortened.push_str("...");
+        }
+        format!("{shortened:?}")
+    }
 }
 
 impl Display for SaveString {

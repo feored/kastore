@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use crate::internal::save_string::SaveString;
 use crate::model::header::player::PlayerColor;
 use crate::model::world::heroes::id::HeroID;
 use crate::model::world::{Funds, IndexObject};
@@ -9,6 +8,15 @@ pub const KINGDOM_SLOT_COUNT: usize = 7;
 
 pub const PUZZLE_REVEALED_TILES_COUNT: usize = 48;
 pub const PUZZLE_ZONE_COUNTS: [usize; 4] = [24, 16, 4, 4];
+
+const PUZZLE_ZONE2_START: u8 = PUZZLE_ZONE_COUNTS[0] as u8;
+const PUZZLE_ZONE3_START: u8 = PUZZLE_ZONE2_START + PUZZLE_ZONE_COUNTS[1] as u8;
+const PUZZLE_ZONE4_START: u8 = PUZZLE_ZONE3_START + PUZZLE_ZONE_COUNTS[2] as u8;
+
+const DEFAULT_PUZZLE_ZONE1_ORDER: [u8; 24] = puzzle_zone_order(0);
+const DEFAULT_PUZZLE_ZONE2_ORDER: [u8; 16] = puzzle_zone_order(PUZZLE_ZONE2_START);
+const DEFAULT_PUZZLE_ZONE3_ORDER: [u8; 4] = puzzle_zone_order(PUZZLE_ZONE3_START);
+const DEFAULT_PUZZLE_ZONE4_ORDER: [u8; 4] = puzzle_zone_order(PUZZLE_ZONE4_START);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Kingdom {
@@ -68,7 +76,8 @@ pub struct KingdomRecruits {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KingdomPuzzle {
-    pub revealed_tiles: SaveString,
+    /// 48 ASCII bytes ('0' or '1') serialized as a length-prefixed byte blob.
+    pub revealed_tiles: Vec<u8>,
     pub zone1_order: Vec<u8>,
     pub zone2_order: Vec<u8>,
     pub zone3_order: Vec<u8>,
@@ -77,21 +86,24 @@ pub struct KingdomPuzzle {
 
 impl Default for KingdomPuzzle {
     fn default() -> Self {
-        let zone1_start = 0;
-        let zone2_start = PUZZLE_ZONE_COUNTS[0];
-        let zone3_start = zone2_start + PUZZLE_ZONE_COUNTS[1];
-        let zone4_start = zone3_start + PUZZLE_ZONE_COUNTS[2];
-
         Self {
-            revealed_tiles: SaveString::from("0".repeat(PUZZLE_REVEALED_TILES_COUNT)),
-            zone1_order: (zone1_start..zone2_start).map(|tile| tile as u8).collect(),
-            zone2_order: (zone2_start..zone3_start).map(|tile| tile as u8).collect(),
-            zone3_order: (zone3_start..zone4_start).map(|tile| tile as u8).collect(),
-            zone4_order: (zone4_start..zone4_start + PUZZLE_ZONE_COUNTS[3])
-                .map(|tile| tile as u8)
-                .collect(),
+            revealed_tiles: vec![b'0'; PUZZLE_REVEALED_TILES_COUNT],
+            zone1_order: DEFAULT_PUZZLE_ZONE1_ORDER.to_vec(),
+            zone2_order: DEFAULT_PUZZLE_ZONE2_ORDER.to_vec(),
+            zone3_order: DEFAULT_PUZZLE_ZONE3_ORDER.to_vec(),
+            zone4_order: DEFAULT_PUZZLE_ZONE4_ORDER.to_vec(),
         }
     }
+}
+
+const fn puzzle_zone_order<const N: usize>(start: u8) -> [u8; N] {
+    let mut order = [0; N];
+    let mut index = 0;
+    while index < N {
+        order[index] = start + index as u8;
+        index += 1;
+    }
+    order
 }
 
 // fheroes2 kingdom mode bitset.

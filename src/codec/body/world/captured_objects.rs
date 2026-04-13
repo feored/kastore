@@ -5,8 +5,9 @@ use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::header::player::PlayerColor;
 use crate::model::world::captured_objects::CapturedObject;
+use crate::model::world::heroes::army::{MonsterType, Troop};
 
-use super::heroes::{decode_troop, encode_troop};
+use super::heroes::encode_troop;
 
 pub(super) fn decode(
     reader: &mut Reader<'_>,
@@ -19,11 +20,12 @@ pub(super) fn decode(
         let captured_object = CapturedObject {
             object_type: reader.read_u16_be("captured object type")?,
             color: PlayerColor::from_bits(reader.read_u8("captured object color")?),
-            guardians: decode_troop(
-                reader,
-                "captured object guardians monster",
-                "captured object guardians count",
-            )?,
+            guardians: Troop {
+                monster: MonsterType::from_i32(
+                    reader.read_i32_be("captured object guardians monster")?,
+                ),
+                count: reader.read_u32_be("captured object guardians count")?,
+            },
         };
         if captured_objects
             .insert(tile_index, captured_object)

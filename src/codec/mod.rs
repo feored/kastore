@@ -73,8 +73,8 @@ fn encode_body(save_game: &SaveGame) -> std::result::Result<Vec<u8>, Error> {
         return body::world::encode(&save_game.world);
     }
 
-    let (_, original_world_prefix_len) =
-        body::world::decode_with_remaining_offset(&save_game.body)?;
+    // Preserve any trailing body sections that still live in the opaque byte tail.
+    let (_, original_world_prefix_len) = body::world::decode_prefix(&save_game.body)?;
     let encoded_world = body::world::encode(&save_game.world)?;
     let suffix = save_game
         .body

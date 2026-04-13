@@ -5,6 +5,7 @@ use crate::SaveString;
 use crate::internal::writer::Writer;
 use crate::model::header::map_info::WorldDate;
 use crate::model::header::player::{PlayerColor, PlayerColorsSet, Race};
+use crate::model::header::supported_language::SupportedLanguage;
 use crate::model::world::captured_objects::CapturedObject;
 use crate::model::world::castles::buildings::{CastleBuilding, CastleBuildingSet, CastleDwellings};
 use crate::model::world::castles::{Castle, CastleModeSet, MageGuild};
@@ -18,6 +19,9 @@ use crate::model::world::heroes::spells::Spell;
 use crate::model::world::heroes::{Hero, HeroBase, PrimarySkills};
 use crate::model::world::kingdoms::{
     KINGDOM_SLOT_COUNT, Kingdom, KingdomModeSet, PUZZLE_REVEALED_TILES_COUNT,
+};
+use crate::model::world::map_objects::{
+    LocalizedString, MapEvent, MapObject, MapObjectBase, MapSign, MapSphinx,
 };
 use crate::model::world::tile::direction::DirectionSet;
 use crate::model::world::tile::{LayerType, ObjectPart, Tile};
@@ -86,6 +90,8 @@ fn world_bytes_with_placeholder_heroes(width: i32, height: i32, tiles: &[Tile]) 
     crate::codec::world_date::encode_world_date(&mut writer, WorldDate::default());
     writer.write_i32_be(HeroID::Unknown(0).to_i32());
     writer.write_i32_be(HeroID::Unknown(0).to_i32());
+    writer.write_u32_be(0);
+    writer.write_u32_be(0);
     writer.into_bytes()
 }
 
@@ -113,6 +119,8 @@ fn decode_world_reads_tiles_and_filters_placeholder_heroes() {
     assert_eq!(world.world_date, WorldDate::default());
     assert_eq!(world.hero_id_as_win_condition, HeroID::Unknown(0));
     assert_eq!(world.hero_id_as_lose_condition, HeroID::Unknown(0));
+    assert!(world.map_objects.is_empty());
+    assert_eq!(world.seed, 0);
 }
 
 #[test]
@@ -141,6 +149,7 @@ fn world_display_includes_world_extras() {
             },
         },
     )]);
+    world.map_objects = sample_map_objects();
 
     let display = world.to_string();
 
@@ -149,6 +158,8 @@ fn world_display_includes_world_extras() {
     assert!(display.contains("timed_events:"));
     assert!(display.contains("Weekly Bonus"));
     assert!(display.contains("1 captured objects"));
+    assert!(display.contains("map_objects:"));
+    assert!(display.contains("Sign uid=41"));
 }
 
 #[test]
@@ -170,6 +181,8 @@ fn encode_world_round_trips_semantic_heroes_in_slot_order() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     let encoded = encode(&world).unwrap();
@@ -201,6 +214,8 @@ fn encode_world_round_trips_semantic_heroes_in_slot_order() {
             world_date: WorldDate::default(),
             hero_id_as_win_condition: HeroID::Unknown(0),
             hero_id_as_lose_condition: HeroID::Unknown(0),
+            map_objects: BTreeMap::new(),
+            seed: 0,
         }
     );
 }
@@ -223,6 +238,8 @@ fn encode_world_round_trips_semantic_castles() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     let encoded = encode(&world).unwrap();
@@ -255,6 +272,8 @@ fn encode_world_rejects_duplicate_hero_ids() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     assert_eq!(
@@ -286,6 +305,8 @@ fn encode_world_rejects_kingdom_hero_color_mismatch() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     assert_eq!(
@@ -320,8 +341,7 @@ fn encode_world_round_trips_semantic_kingdom_details() {
             object_type: 88,
         },
     ];
-    kingdoms[0].puzzle.revealed_tiles =
-        SaveString::from("01".repeat(PUZZLE_REVEALED_TILES_COUNT / 2));
+    kingdoms[0].puzzle.revealed_tiles = "01".repeat(PUZZLE_REVEALED_TILES_COUNT / 2).into_bytes();
     kingdoms[0].puzzle.zone1_order.reverse();
     kingdoms[0].puzzle.zone2_order.reverse();
     kingdoms[0].visited_tents_colors = 1 << 8;
@@ -343,6 +363,7 @@ fn encode_world_round_trips_semantic_kingdom_details() {
             },
         },
     )]);
+    let map_objects = sample_map_objects();
 
     let world = World {
         width: 3,
@@ -358,6 +379,8 @@ fn encode_world_round_trips_semantic_kingdom_details() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects,
+        seed: 0xDEAD_BEEF,
     };
 
     let encoded = encode(&world).unwrap();
@@ -369,8 +392,7 @@ fn encode_world_round_trips_semantic_kingdom_details() {
 #[test]
 fn encode_world_rejects_invalid_kingdom_puzzle_revealed_tiles() {
     let mut world = World::default();
-    world.kingdoms[0].puzzle.revealed_tiles =
-        SaveString::from("0".repeat(PUZZLE_REVEALED_TILES_COUNT - 1));
+    world.kingdoms[0].puzzle.revealed_tiles = vec![b'0'; PUZZLE_REVEALED_TILES_COUNT - 1];
 
     assert_eq!(
         encode(&world),
@@ -428,6 +450,8 @@ fn encode_world_rejects_missing_kingdom_hero_membership() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     assert_eq!(
@@ -459,6 +483,8 @@ fn encode_world_rejects_kingdom_castle_color_mismatch() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     assert_eq!(
@@ -489,6 +515,8 @@ fn encode_world_rejects_unknown_kingdom_castle_ref() {
         world_date: WorldDate::default(),
         hero_id_as_win_condition: HeroID::Unknown(0),
         hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::new(),
+        seed: 0,
     };
 
     assert_eq!(
@@ -496,6 +524,47 @@ fn encode_world_rejects_unknown_kingdom_castle_ref() {
         Err(Error::InvalidModel {
             field: "kingdom castles",
             message: "kingdom castle references must point to decoded castles",
+        })
+    );
+}
+
+#[test]
+fn encode_world_rejects_map_object_uid_mismatch() {
+    let world = World {
+        width: 0,
+        height: 0,
+        tiles: Vec::new(),
+        heroes: Vec::new(),
+        castles: Vec::new(),
+        kingdoms: vec![Kingdom::default(); KINGDOM_SLOT_COUNT],
+        custom_rumors: Vec::new(),
+        timed_events: Vec::new(),
+        captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
+        map_objects: BTreeMap::from([(
+            41,
+            MapObject::Sign(MapSign {
+                base: MapObjectBase {
+                    map_position: MapPosition { x: 2, y: 3 },
+                    uid: 42,
+                },
+                message: LocalizedString {
+                    text: SaveString::from("Beware the swamp."),
+                    language: Some(SupportedLanguage::ENGLISH),
+                },
+            }),
+        )]),
+        seed: 0,
+    };
+
+    assert_eq!(
+        encode(&world),
+        Err(Error::InvalidModel {
+            field: "world map objects",
+            message: "map object key uid must match object body uid",
         })
     );
 }
@@ -598,30 +667,112 @@ fn sample_timed_event() -> TimedEvent {
     }
 }
 
-fn sample_hero(id: HeroID, name: &str, color: PlayerColor, race: Race) -> Hero {
-    let raw_id = id.to_i32();
+fn sample_map_objects() -> BTreeMap<u32, MapObject> {
+    BTreeMap::from([
+        (
+            41,
+            MapObject::Sign(MapSign {
+                base: MapObjectBase {
+                    map_position: MapPosition { x: 2, y: 3 },
+                    uid: 41,
+                },
+                message: LocalizedString {
+                    text: SaveString::from("Beware the swamp."),
+                    language: Some(SupportedLanguage::ENGLISH),
+                },
+            }),
+        ),
+        (
+            55,
+            MapObject::Event(MapEvent {
+                base: MapObjectBase {
+                    map_position: MapPosition { x: 4, y: 5 },
+                    uid: 55,
+                },
+                resources: crate::model::world::Funds {
+                    wood: 3,
+                    mercury: 0,
+                    ore: 2,
+                    sulfur: 0,
+                    crystal: 0,
+                    gems: 1,
+                    gold: 750,
+                },
+                artifact: Artifact {
+                    id: ArtifactID::MagicBook,
+                    ext: 0,
+                },
+                is_computer_player_allowed: true,
+                is_single_time_event: true,
+                colors: PlayerColorsSet::from_bits(PlayerColor::Blue.bits()),
+                message: SaveString::from("Blue only."),
+                secondary_skill: SecondarySkill {
+                    id: Skill::Wisdom,
+                    level: SkillLevel::Basic,
+                },
+                experience: 250,
+            }),
+        ),
+        (
+            77,
+            MapObject::Sphinx(MapSphinx {
+                base: MapObjectBase {
+                    map_position: MapPosition { x: 6, y: 7 },
+                    uid: 77,
+                },
+                resources: crate::model::world::Funds {
+                    wood: 0,
+                    mercury: 0,
+                    ore: 0,
+                    sulfur: 0,
+                    crystal: 0,
+                    gems: 0,
+                    gold: 1_500,
+                },
+                artifact: Artifact {
+                    id: ArtifactID::GoldenGoose,
+                    ext: 0,
+                },
+                answers: vec![SaveString::from("silence"), SaveString::from("shadow")],
+                riddle: SaveString::from("What walks unseen?"),
+                valid: true,
+                is_truncated_answer: false,
+            }),
+        ),
+    ])
+}
 
-    Hero {
-        base: HeroBase {
-            primary_skills: PrimarySkills {
-                attack: raw_id,
-                defense: raw_id + 1,
-                knowledge: raw_id + 2,
-                power: raw_id + 3,
+fn sample_hero(id: HeroID, name: &str, color: PlayerColor, race: Race) -> Hero {
+    let (
+        primary_skills,
+        map_position,
+        spell_points,
+        move_points,
+        spell_book,
+        bag_artifacts,
+        experience,
+        secondary_skills,
+        troops,
+        from_index,
+        movement_cost,
+        sprite_index,
+        patrol_center,
+        patrol_distance,
+        visited_tile_index,
+        last_ground_region,
+    ) = match id {
+        HeroID::Kastore => (
+            PrimarySkills {
+                attack: 3,
+                defense: 2,
+                knowledge: 4,
+                power: 5,
             },
-            map_position: MapPosition {
-                x: raw_id as i16,
-                y: (raw_id as i16) + 10,
-            },
-            modes: if color == PlayerColor::None {
-                HeroModeSet::RECRUIT
-            } else {
-                HeroModeSet::ENABLEMOVE
-            },
-            spell_points: raw_id as u32 + 100,
-            move_points: raw_id as u32 + 200,
-            spell_book: vec![Spell::Arrow, Spell::DimensionDoor],
-            bag_artifacts: vec![
+            MapPosition { x: 5, y: 8 },
+            18,
+            1_420,
+            vec![Spell::Arrow, Spell::Teleport],
+            vec![
                 Artifact {
                     id: ArtifactID::MagicBook,
                     ext: 0,
@@ -631,69 +782,155 @@ fn sample_hero(id: HeroID, name: &str, color: PlayerColor, race: Race) -> Hero {
                     ext: 57,
                 },
             ],
-        },
-        name: SaveString::from(name),
-        color_base: color,
-        experience: raw_id as u32 * 1000,
-        secondary_skills: vec![
-            SecondarySkill {
-                id: Skill::Wisdom,
-                level: SkillLevel::Advanced,
-            },
-            SecondarySkill {
-                id: Skill::Logistics,
-                level: SkillLevel::Expert,
-            },
-        ],
-        army: Army {
-            troops: vec![
+            12_750,
+            vec![
+                SecondarySkill {
+                    id: Skill::Wisdom,
+                    level: SkillLevel::Advanced,
+                },
+                SecondarySkill {
+                    id: Skill::Logistics,
+                    level: SkillLevel::Advanced,
+                },
+            ],
+            vec![
                 Troop {
-                    monster: MonsterType::Peasant,
-                    count: raw_id as u32 + 1,
+                    monster: MonsterType::Centaur,
+                    count: 28,
                 },
                 Troop {
-                    monster: MonsterType::Archer,
-                    count: raw_id as u32 + 2,
+                    monster: MonsterType::Gargoyle,
+                    count: 18,
                 },
                 Troop {
-                    monster: MonsterType::Mage,
-                    count: raw_id as u32 + 3,
+                    monster: MonsterType::Griffin,
+                    count: 12,
                 },
                 Troop {
-                    monster: MonsterType::Titan,
-                    count: raw_id as u32 + 4,
+                    monster: MonsterType::Minotaur,
+                    count: 7,
                 },
                 Troop {
                     monster: MonsterType::BlackDragon,
-                    count: raw_id as u32 + 5,
+                    count: 2,
                 },
             ],
+            118,
+            130,
+            40,
+            Point { x: 6, y: 9 },
+            3,
+            211,
+            9,
+        ),
+        HeroID::Solmyr => (
+            PrimarySkills {
+                attack: 2,
+                defense: 3,
+                knowledge: 8,
+                power: 7,
+            },
+            MapPosition { x: 11, y: 4 },
+            34,
+            1_360,
+            vec![Spell::Arrow, Spell::DimensionDoor],
+            vec![
+                Artifact {
+                    id: ArtifactID::MagicBook,
+                    ext: 0,
+                },
+                Artifact {
+                    id: ArtifactID::SpellScroll,
+                    ext: 44,
+                },
+            ],
+            19_500,
+            vec![
+                SecondarySkill {
+                    id: Skill::Wisdom,
+                    level: SkillLevel::Expert,
+                },
+                SecondarySkill {
+                    id: Skill::Mysticism,
+                    level: SkillLevel::Advanced,
+                },
+            ],
+            vec![
+                Troop {
+                    monster: MonsterType::Halfling,
+                    count: 32,
+                },
+                Troop {
+                    monster: MonsterType::Boar,
+                    count: 18,
+                },
+                Troop {
+                    monster: MonsterType::IronGolem,
+                    count: 12,
+                },
+                Troop {
+                    monster: MonsterType::Mage,
+                    count: 6,
+                },
+                Troop {
+                    monster: MonsterType::Titan,
+                    count: 2,
+                },
+            ],
+            64,
+            120,
+            68,
+            Point { x: 10, y: 4 },
+            2,
+            305,
+            12,
+        ),
+        other => panic!("missing sample hero fixture for {other:?}"),
+    };
+
+    Hero {
+        base: HeroBase {
+            primary_skills,
+            map_position,
+            modes: if color == PlayerColor::None {
+                HeroModeSet::RECRUIT
+            } else {
+                HeroModeSet::ENABLEMOVE
+            },
+            spell_points,
+            move_points,
+            spell_book,
+            bag_artifacts,
+        },
+        name: SaveString::from(name),
+        color_base: color,
+        experience,
+        secondary_skills,
+        army: Army {
+            troops,
             spread_combat_formation: color == PlayerColor::None,
             player_color: color,
         },
         id,
-        portrait: raw_id,
+        portrait: id.to_i32(),
         race,
         object_type_under_hero: 0x0123,
         path: Path {
             hidden: color != PlayerColor::None,
             steps: vec![RouteStep {
-                from_index: raw_id * 10,
+                from_index,
                 direction: Direction::BottomRight,
-                movement_cost: raw_id as u32 + 50,
+                movement_cost,
             }],
         },
         direction: Direction::Left,
-        sprite_index: raw_id + 7,
-        patrol_center: Point {
-            x: raw_id * 2,
-            y: raw_id * 3,
-        },
-        patrol_distance: raw_id as u32 + 8,
+        sprite_index,
+        patrol_center,
+        patrol_distance,
         visited_objects: vec![IndexObject {
-            tile_index: raw_id * 100,
+            tile_index: visited_tile_index,
             object_type: 0x0042,
         }],
-        last_ground_region: raw_id as u32 + 9,
+        last_ground_region,
     }
 }

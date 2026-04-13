@@ -2,7 +2,6 @@ use crate::Error;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::header::player::PlayerColorsSet;
-use crate::model::world::Funds;
 use crate::model::world::timed_events::TimedEvent;
 
 pub(super) fn decode(reader: &mut Reader<'_>) -> std::result::Result<Vec<TimedEvent>, Error> {
@@ -10,15 +9,7 @@ pub(super) fn decode(reader: &mut Reader<'_>) -> std::result::Result<Vec<TimedEv
     let mut timed_events = Vec::with_capacity(usize::try_from(count).unwrap_or(0));
     for _ in 0..count {
         timed_events.push(TimedEvent {
-            resources: Funds {
-                wood: reader.read_i32_be("timed event funds wood")?,
-                mercury: reader.read_i32_be("timed event funds mercury")?,
-                ore: reader.read_i32_be("timed event funds ore")?,
-                sulfur: reader.read_i32_be("timed event funds sulfur")?,
-                crystal: reader.read_i32_be("timed event funds crystal")?,
-                gems: reader.read_i32_be("timed event funds gems")?,
-                gold: reader.read_i32_be("timed event funds gold")?,
-            },
+            resources: super::decode_funds(reader)?,
             is_applicable_for_ai_players: reader
                 .read_byte_as_bool("timed event applies to ai players")?,
             first_occurrence_day: reader.read_u32_be("timed event first occurrence day")?,
@@ -43,13 +34,7 @@ pub(super) fn encode(
         })?,
     );
     for timed_event in timed_events {
-        writer.write_i32_be(timed_event.resources.wood);
-        writer.write_i32_be(timed_event.resources.mercury);
-        writer.write_i32_be(timed_event.resources.ore);
-        writer.write_i32_be(timed_event.resources.sulfur);
-        writer.write_i32_be(timed_event.resources.crystal);
-        writer.write_i32_be(timed_event.resources.gems);
-        writer.write_i32_be(timed_event.resources.gold);
+        super::encode_funds(writer, &timed_event.resources);
         writer.write_byte_from_bool(timed_event.is_applicable_for_ai_players);
         writer.write_u32_be(timed_event.first_occurrence_day);
         writer.write_u32_be(timed_event.repeat_period_in_days);

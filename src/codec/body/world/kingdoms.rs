@@ -2,12 +2,12 @@ use crate::Error;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::header::player::PlayerColor;
+use crate::model::world::IndexObject;
 use crate::model::world::heroes::id::HeroID;
 use crate::model::world::kingdoms::{
     KINGDOM_SLOT_COUNT, Kingdom, KingdomModeSet, KingdomPuzzle, KingdomRecruit, KingdomRecruits,
     PUZZLE_REVEALED_TILES_COUNT, PUZZLE_ZONE_COUNTS,
 };
-use crate::model::world::{Funds, IndexObject};
 
 const EXPECTED_KINGDOMS_COUNT: u32 = KINGDOM_SLOT_COUNT as u32;
 
@@ -43,15 +43,7 @@ fn decode_kingdom(reader: &mut Reader<'_>) -> std::result::Result<Kingdom, Error
     let mode = KingdomModeSet::from_bits(reader.read_u32_be("kingdom mode")?);
     let color = PlayerColor::from_bits(reader.read_u8("kingdom color")?);
 
-    let funds = Funds {
-        wood: reader.read_i32_be("kingdom funds wood")?,
-        mercury: reader.read_i32_be("kingdom funds mercury")?,
-        ore: reader.read_i32_be("kingdom funds ore")?,
-        sulfur: reader.read_i32_be("kingdom funds sulfur")?,
-        crystal: reader.read_i32_be("kingdom funds crystal")?,
-        gems: reader.read_i32_be("kingdom funds gems")?,
-        gold: reader.read_i32_be("kingdom funds gold")?,
-    };
+    let funds = super::decode_funds(reader)?;
     let lost_town_days = reader.read_u32_be("kingdom lost town days")?;
 
     let castles_count = reader.read_u32_be("kingdom castles count")?;
@@ -90,7 +82,17 @@ fn decode_kingdom(reader: &mut Reader<'_>) -> std::result::Result<Kingdom, Error
     let puzzle = KingdomPuzzle {
         revealed_tiles: {
             let revealed_tiles_offset = reader.position();
-            let revealed_tiles = reader.read_save_string("kingdom puzzle revealed tiles")?;
+            let len = reader.read_u32_be("kingdom puzzle revealed tiles")?;
+            let len = usize::try_from(len).map_err(|_| {
+                reader.invalid_value(
+                    "kingdom puzzle revealed tiles",
+                    revealed_tiles_offset,
+                    "byte length does not fit in usize",
+                )
+            })?;
+            let revealed_tiles = reader
+                .read_bytes(len, "kingdom puzzle revealed tiles")?
+                .to_vec();
             if !revealed_tiles_are_valid(&revealed_tiles) {
                 return Err(reader.invalid_value(
                     "kingdom puzzle revealed tiles",
@@ -149,13 +151,7 @@ fn decode_kingdom(reader: &mut Reader<'_>) -> std::result::Result<Kingdom, Error
 fn encode_kingdom(writer: &mut Writer, kingdom: &Kingdom) -> std::result::Result<(), Error> {
     writer.write_u32_be(kingdom.mode.bits());
     writer.write_u8(kingdom.color.bits());
-    writer.write_i32_be(kingdom.funds.wood);
-    writer.write_i32_be(kingdom.funds.mercury);
-    writer.write_i32_be(kingdom.funds.ore);
-    writer.write_i32_be(kingdom.funds.sulfur);
-    writer.write_i32_be(kingdom.funds.crystal);
-    writer.write_i32_be(kingdom.funds.gems);
-    writer.write_i32_be(kingdom.funds.gold);
+    super::encode_funds(writer, &kingdom.funds);
     writer.write_u32_be(kingdom.lost_town_days);
     writer.write_u32_be(u32::try_from(kingdom.castle_indexes.len()).map_err(|_| {
         Error::InvalidModel {
@@ -195,7 +191,13 @@ fn encode_kingdom(writer: &mut Writer, kingdom: &Kingdom) -> std::result::Result
             message: "revealed tiles must be 48 ASCII '0'/'1' bytes",
         });
     }
-    writer.write_save_string(&kingdom.puzzle.revealed_tiles);
+    writer.write_u32_be(
+        u32::try_from(kingdom.puzzle.revealed_tiles.len()).map_err(|_| Error::InvalidModel {
+            field: "kingdom puzzle revealed tiles",
+            message: "byte length must fit in u32",
+        })?,
+    );
+    writer.write_bytes(&kingdom.puzzle.revealed_tiles);
     encode_puzzle_zone(
         writer,
         &kingdom.puzzle.zone1_order,
@@ -276,10 +278,9 @@ fn encode_puzzle_zone(
     Ok(())
 }
 
-fn revealed_tiles_are_valid(revealed_tiles: &crate::SaveString) -> bool {
-    revealed_tiles.as_bytes().len() == PUZZLE_REVEALED_TILES_COUNT
+fn revealed_tiles_are_valid(revealed_tiles: &[u8]) -> bool {
+    revealed_tiles.len() == PUZZLE_REVEALED_TILES_COUNT
         && revealed_tiles
-            .as_bytes()
             .iter()
             .all(|byte| matches!(byte, b'0' | b'1'))
 }

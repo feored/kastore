@@ -3,6 +3,7 @@ mod castles;
 mod custom_rumors;
 mod heroes;
 mod kingdoms;
+mod map_objects;
 mod tile;
 mod timed_events;
 mod ultimate_artifact;
@@ -13,18 +14,22 @@ use crate::codec::world_date::{decode_world_date, encode_world_date};
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
+use crate::model::world::Funds;
 use crate::model::world::World;
 use crate::model::world::heroes::id::HeroID;
 use crate::model::world::tile::Tile;
 use validation::validate_kingdoms;
 
 pub(crate) fn decode(bytes: &[u8]) -> std::result::Result<World, Error> {
-    Ok(decode_with_remaining_offset(bytes)?.0)
+    Ok(decode_prefix(bytes)?.0)
 }
 
-pub(crate) fn decode_with_remaining_offset(
-    bytes: &[u8],
-) -> std::result::Result<(World, usize), Error> {
+/// Decode the typed `World` prefix from a decompressed body.
+///
+/// The returned byte count is the number of bytes consumed from the front of
+/// `bytes`, allowing callers to preserve any trailing opaque sections that are
+/// not yet part of the semantic model.
+pub(crate) fn decode_prefix(bytes: &[u8]) -> std::result::Result<(World, usize), Error> {
     let mut reader = Reader::with_context(bytes, ParseSection::World);
     let width: i32 = reader.read_i32_be("world width")?;
     let height: i32 = reader.read_i32_be("world height")?;
@@ -46,6 +51,8 @@ pub(crate) fn decode_with_remaining_offset(
         HeroID::from_i32(reader.read_i32_be("hero id as win condition")?);
     let hero_id_as_lose_condition =
         HeroID::from_i32(reader.read_i32_be("hero id as loss condition")?);
+    let map_objects = map_objects::decode(&mut reader)?;
+    let seed = reader.read_u32_be("world seed")?;
     let world = World {
         width,
         height,
@@ -60,6 +67,8 @@ pub(crate) fn decode_with_remaining_offset(
         world_date,
         hero_id_as_win_condition,
         hero_id_as_lose_condition,
+        map_objects,
+        seed,
     };
     validate_kingdoms(&world)
         .map_err(|issue| reader.invalid_value(issue.field, kingdoms_offset, issue.message))?;
@@ -96,8 +105,32 @@ pub(crate) fn encode(world: &World) -> std::result::Result<Vec<u8>, Error> {
     encode_world_date(&mut writer, world.world_date);
     writer.write_i32_be(world.hero_id_as_win_condition.to_i32());
     writer.write_i32_be(world.hero_id_as_lose_condition.to_i32());
+    map_objects::encode(&mut writer, &world.map_objects)?;
+    writer.write_u32_be(world.seed);
 
     Ok(writer.into_bytes())
+}
+
+pub(super) fn decode_funds(reader: &mut Reader<'_>) -> std::result::Result<Funds, Error> {
+    Ok(Funds {
+        wood: reader.read_i32_be("funds wood")?,
+        mercury: reader.read_i32_be("funds mercury")?,
+        ore: reader.read_i32_be("funds ore")?,
+        sulfur: reader.read_i32_be("funds sulfur")?,
+        crystal: reader.read_i32_be("funds crystal")?,
+        gems: reader.read_i32_be("funds gems")?,
+        gold: reader.read_i32_be("funds gold")?,
+    })
+}
+
+pub(super) fn encode_funds(writer: &mut Writer, funds: &Funds) {
+    writer.write_i32_be(funds.wood);
+    writer.write_i32_be(funds.mercury);
+    writer.write_i32_be(funds.ore);
+    writer.write_i32_be(funds.sulfur);
+    writer.write_i32_be(funds.crystal);
+    writer.write_i32_be(funds.gems);
+    writer.write_i32_be(funds.gold);
 }
 
 #[cfg(test)]

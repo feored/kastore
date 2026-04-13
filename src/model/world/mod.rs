@@ -2,6 +2,7 @@ pub mod captured_objects;
 pub mod castles;
 pub mod heroes;
 pub mod kingdoms;
+pub mod map_objects;
 pub mod tile;
 pub mod timed_events;
 pub mod ultimate_artifact;
@@ -15,6 +16,7 @@ use crate::model::header::player::PlayerColor;
 use crate::model::world::captured_objects::CapturedObject;
 use crate::model::world::heroes::id::HeroID;
 use crate::model::world::kingdoms::KINGDOM_SLOT_COUNT;
+use crate::model::world::map_objects::MapObject;
 use crate::model::world::timed_events::TimedEvent;
 use crate::model::world::ultimate_artifact::UltimateArtifact;
 
@@ -44,6 +46,8 @@ pub struct World {
     pub world_date: WorldDate,
     pub hero_id_as_win_condition: HeroID,
     pub hero_id_as_lose_condition: HeroID,
+    pub map_objects: BTreeMap<u32, MapObject>,
+    pub seed: u32,
 }
 
 impl Default for World {
@@ -62,6 +66,8 @@ impl Default for World {
             world_date: WorldDate::default(),
             hero_id_as_win_condition: HeroID::Unknown(0),
             hero_id_as_lose_condition: HeroID::Unknown(0),
+            map_objects: BTreeMap::new(),
+            seed: 0,
         }
     }
 }
@@ -97,10 +103,11 @@ impl Display for World {
         )?;
         writeln!(
             f,
-            "world extras: {} custom rumors, {} timed events, {} captured objects",
+            "world extras: {} custom rumors, {} timed events, {} captured objects, {} map objects",
             self.custom_rumors.len(),
             self.timed_events.len(),
-            self.captured_objects.len()
+            self.captured_objects.len(),
+            self.map_objects.len()
         )?;
 
         let visible_kingdoms: Vec<&kingdoms::Kingdom> = self
@@ -123,7 +130,7 @@ impl Display for World {
         if !self.custom_rumors.is_empty() {
             writeln!(f, "custom_rumors:")?;
             for rumor in &self.custom_rumors {
-                writeln!(f, "  - {}", brief_save_string(rumor, 96))?;
+                writeln!(f, "  - {}", rumor.brief(96))?;
             }
         }
 
@@ -136,6 +143,13 @@ impl Display for World {
 
         if self.ultimate_artifact.is_meaningful() {
             writeln!(f, "ultimate_artifact: {}", self.ultimate_artifact)?;
+        }
+
+        if !self.map_objects.is_empty() {
+            writeln!(f, "map_objects:")?;
+            for map_object in self.map_objects.values() {
+                writeln!(f, "  - {map_object}")?;
+            }
         }
 
         if !self.castles.is_empty() {
@@ -154,17 +168,6 @@ impl Display for World {
 
         Ok(())
     }
-}
-
-fn brief_save_string(value: &SaveString, max_chars: usize) -> String {
-    let single_line = value.to_string_lossy().replace(['\r', '\n'], " ");
-    let total_chars = single_line.chars().count();
-    let mut shortened: String = single_line.chars().take(max_chars).collect();
-    if total_chars > max_chars {
-        shortened.push_str("...");
-    }
-
-    format!("{shortened:?}")
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -198,4 +201,25 @@ pub struct Funds {
     pub crystal: i32,
     pub gems: i32,
     pub gold: i32,
+}
+
+impl Funds {
+    /// Return a human-readable summary of non-zero resource values, or an empty string.
+    pub(crate) fn brief(&self) -> String {
+        let parts: Vec<String> = [
+            (self.wood, "wood"),
+            (self.mercury, "mercury"),
+            (self.ore, "ore"),
+            (self.sulfur, "sulfur"),
+            (self.crystal, "crystal"),
+            (self.gems, "gems"),
+            (self.gold, "gold"),
+        ]
+        .into_iter()
+        .filter(|(v, _)| *v != 0)
+        .map(|(v, name)| format!("{v} {name}"))
+        .collect();
+
+        parts.join(", ")
+    }
 }

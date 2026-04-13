@@ -252,11 +252,10 @@ pub(crate) fn decode_army(reader: &mut Reader<'_>) -> std::result::Result<Army, 
     }
     let mut troops = Vec::with_capacity(usize::try_from(troops_count).unwrap_or(0));
     for _ in 0..troops_count {
-        troops.push(decode_troop(
-            reader,
-            "hero army troop monster type",
-            "hero army troop count",
-        )?);
+        troops.push(Troop {
+            monster: MonsterType::from_i32(reader.read_i32_be("hero army troop monster type")?),
+            count: reader.read_u32_be("hero army troop count")?,
+        });
     }
     let army: Army = Army {
         troops,
@@ -283,18 +282,6 @@ pub(crate) fn encode_army(writer: &mut Writer, army: &Army) -> std::result::Resu
 
     Ok(())
 }
-
-pub(crate) fn decode_troop(
-    reader: &mut Reader<'_>,
-    monster_field: &'static str,
-    count_field: &'static str,
-) -> std::result::Result<Troop, Error> {
-    Ok(Troop {
-        monster: MonsterType::from_i32(reader.read_i32_be(monster_field)?),
-        count: reader.read_u32_be(count_field)?,
-    })
-}
-
 pub(crate) fn encode_troop(writer: &mut Writer, troop: &Troop) {
     writer.write_i32_be(troop.monster.to_i32());
     writer.write_u32_be(troop.count);

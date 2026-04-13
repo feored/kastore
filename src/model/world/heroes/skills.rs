@@ -4,7 +4,7 @@ pub struct SecondarySkill {
     pub level: SkillLevel,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Skill {
     Unknown(i32),
     Pathfinding,
@@ -25,12 +25,12 @@ pub enum Skill {
 
 impl Default for Skill {
     fn default() -> Self {
-        Skill::Pathfinding
+        Skill::Unknown(0)
     }
 }
 
 impl Skill {
-    pub fn from_i32(value: i32) -> Self {
+    pub const fn from_i32(value: i32) -> Self {
         match value {
             1 => Skill::Pathfinding,
             2 => Skill::Archery,
@@ -49,9 +49,10 @@ impl Skill {
             other => Skill::Unknown(other),
         }
     }
-    pub fn to_i32(&self) -> i32 {
+
+    pub const fn to_i32(self) -> i32 {
         match self {
-            Skill::Unknown(value) => *value,
+            Skill::Unknown(value) => value,
             Skill::Pathfinding => 1,
             Skill::Archery => 2,
             Skill::Logistics => 3,
@@ -70,7 +71,7 @@ impl Skill {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SkillLevel {
     Unknown(i32),
     Basic,
@@ -80,12 +81,12 @@ pub enum SkillLevel {
 
 impl Default for SkillLevel {
     fn default() -> Self {
-        SkillLevel::Basic
+        SkillLevel::Unknown(0)
     }
 }
 
 impl SkillLevel {
-    pub fn from_i32(value: i32) -> Self {
+    pub const fn from_i32(value: i32) -> Self {
         match value {
             1 => SkillLevel::Basic,
             2 => SkillLevel::Advanced,
@@ -93,9 +94,10 @@ impl SkillLevel {
             other => SkillLevel::Unknown(other),
         }
     }
-    pub fn to_i32(&self) -> i32 {
+
+    pub const fn to_i32(self) -> i32 {
         match self {
-            SkillLevel::Unknown(value) => *value,
+            SkillLevel::Unknown(value) => value,
             SkillLevel::Basic => 1,
             SkillLevel::Advanced => 2,
             SkillLevel::Expert => 3,
