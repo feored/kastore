@@ -257,7 +257,7 @@ impl HeroID {
 
 impl Default for HeroID {
     fn default() -> Self {
-        HeroID::Kastore
+        HeroID::Unknown(0)
     }
 }
 

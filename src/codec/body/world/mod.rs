@@ -5,13 +5,16 @@ mod heroes;
 mod kingdoms;
 mod tile;
 mod timed_events;
+mod ultimate_artifact;
 mod validation;
 
 use crate::Error;
+use crate::codec::world_date::{decode_world_date, encode_world_date};
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::world::World;
+use crate::model::world::heroes::id::HeroID;
 use crate::model::world::tile::Tile;
 use validation::validate_kingdoms;
 
@@ -37,6 +40,12 @@ pub(crate) fn decode_with_remaining_offset(
     let custom_rumors = custom_rumors::decode(&mut reader)?;
     let timed_events = timed_events::decode(&mut reader)?;
     let captured_objects = captured_objects::decode(&mut reader)?;
+    let ultimate_artifact = ultimate_artifact::decode(&mut reader)?;
+    let world_date = decode_world_date(&mut reader)?;
+    let hero_id_as_win_condition =
+        HeroID::from_i32(reader.read_i32_be("hero id as win condition")?);
+    let hero_id_as_lose_condition =
+        HeroID::from_i32(reader.read_i32_be("hero id as loss condition")?);
     let world = World {
         width,
         height,
@@ -47,6 +56,10 @@ pub(crate) fn decode_with_remaining_offset(
         custom_rumors,
         timed_events,
         captured_objects,
+        ultimate_artifact,
+        world_date,
+        hero_id_as_win_condition,
+        hero_id_as_lose_condition,
     };
     validate_kingdoms(&world)
         .map_err(|issue| reader.invalid_value(issue.field, kingdoms_offset, issue.message))?;
@@ -79,6 +92,10 @@ pub(crate) fn encode(world: &World) -> std::result::Result<Vec<u8>, Error> {
     custom_rumors::encode(&mut writer, &world.custom_rumors)?;
     timed_events::encode(&mut writer, &world.timed_events)?;
     captured_objects::encode(&mut writer, &world.captured_objects)?;
+    ultimate_artifact::encode(&mut writer, &world.ultimate_artifact)?;
+    encode_world_date(&mut writer, world.world_date);
+    writer.write_i32_be(world.hero_id_as_win_condition.to_i32());
+    writer.write_i32_be(world.hero_id_as_lose_condition.to_i32());
 
     Ok(writer.into_bytes())
 }

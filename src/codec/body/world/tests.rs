@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use super::*;
 use crate::SaveString;
 use crate::internal::writer::Writer;
+use crate::model::header::map_info::WorldDate;
 use crate::model::header::player::{PlayerColor, PlayerColorsSet, Race};
 use crate::model::world::captured_objects::CapturedObject;
 use crate::model::world::castles::buildings::{CastleBuilding, CastleBuildingSet, CastleDwellings};
@@ -21,6 +22,7 @@ use crate::model::world::kingdoms::{
 use crate::model::world::tile::direction::DirectionSet;
 use crate::model::world::tile::{LayerType, ObjectPart, Tile};
 use crate::model::world::timed_events::TimedEvent;
+use crate::model::world::ultimate_artifact::UltimateArtifact;
 use crate::model::world::{IndexObject, MapPosition, Point, World};
 
 fn sample_tile() -> Tile {
@@ -80,6 +82,10 @@ fn world_bytes_with_placeholder_heroes(width: i32, height: i32, tiles: &[Tile]) 
     writer.write_u32_be(0);
     writer.write_u32_be(0);
     writer.write_u32_be(0);
+    super::ultimate_artifact::encode(&mut writer, &UltimateArtifact::default()).unwrap();
+    crate::codec::world_date::encode_world_date(&mut writer, WorldDate::default());
+    writer.write_i32_be(HeroID::Unknown(0).to_i32());
+    writer.write_i32_be(HeroID::Unknown(0).to_i32());
     writer.into_bytes()
 }
 
@@ -103,6 +109,10 @@ fn decode_world_reads_tiles_and_filters_placeholder_heroes() {
     assert!(world.custom_rumors.is_empty());
     assert!(world.timed_events.is_empty());
     assert!(world.captured_objects.is_empty());
+    assert_eq!(world.ultimate_artifact, UltimateArtifact::default());
+    assert_eq!(world.world_date, WorldDate::default());
+    assert_eq!(world.hero_id_as_win_condition, HeroID::Unknown(0));
+    assert_eq!(world.hero_id_as_lose_condition, HeroID::Unknown(0));
 }
 
 #[test]
@@ -156,6 +166,10 @@ fn encode_world_round_trips_semantic_heroes_in_slot_order() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     let encoded = encode(&world).unwrap();
@@ -183,6 +197,10 @@ fn encode_world_round_trips_semantic_heroes_in_slot_order() {
             custom_rumors: Vec::new(),
             timed_events: Vec::new(),
             captured_objects: BTreeMap::new(),
+            ultimate_artifact: UltimateArtifact::default(),
+            world_date: WorldDate::default(),
+            hero_id_as_win_condition: HeroID::Unknown(0),
+            hero_id_as_lose_condition: HeroID::Unknown(0),
         }
     );
 }
@@ -201,6 +219,10 @@ fn encode_world_round_trips_semantic_castles() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     let encoded = encode(&world).unwrap();
@@ -229,6 +251,10 @@ fn encode_world_rejects_duplicate_hero_ids() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     assert_eq!(
@@ -256,6 +282,10 @@ fn encode_world_rejects_kingdom_hero_color_mismatch() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     assert_eq!(
@@ -324,6 +354,10 @@ fn encode_world_round_trips_semantic_kingdom_details() {
         custom_rumors,
         timed_events,
         captured_objects,
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     let encoded = encode(&world).unwrap();
@@ -390,6 +424,10 @@ fn encode_world_rejects_missing_kingdom_hero_membership() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     assert_eq!(
@@ -417,6 +455,10 @@ fn encode_world_rejects_kingdom_castle_color_mismatch() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     assert_eq!(
@@ -443,6 +485,10 @@ fn encode_world_rejects_unknown_kingdom_castle_ref() {
         custom_rumors: Vec::new(),
         timed_events: Vec::new(),
         captured_objects: BTreeMap::new(),
+        ultimate_artifact: UltimateArtifact::default(),
+        world_date: WorldDate::default(),
+        hero_id_as_win_condition: HeroID::Unknown(0),
+        hero_id_as_lose_condition: HeroID::Unknown(0),
     };
 
     assert_eq!(

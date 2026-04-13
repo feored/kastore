@@ -7,13 +7,14 @@ use flate2::write::ZlibEncoder;
 
 use crate::Error;
 use crate::SaveVersion;
+use crate::codec::world_date::{decode_world_date, encode_world_date};
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::header::game_type::GameType;
 use crate::model::header::map_info::{
     Difficulty, GameVersion, LossConditionData, LossConditionKind, MapInfo, VictoryConditionData,
-    VictoryConditionKind, WorldDate,
+    VictoryConditionKind,
 };
 use crate::model::header::player::{PlayerColorsSet, PlayerSlotInfo, Race};
 use crate::model::header::supported_language::SupportedLanguage;
@@ -180,11 +181,7 @@ fn decode_map_info(
     let start_with_hero_in_first_castle =
         reader.read_byte_as_bool("start with hero in first castle")?;
     let version = GameVersion::from_u32(reader.read_u32_be("game version")?);
-    let world_date = WorldDate {
-        day: reader.read_u32_be("world date day")?,
-        week: reader.read_u32_be("world date week")?,
-        month: reader.read_u32_be("world date month")?,
-    };
+    let world_date = decode_world_date(reader)?;
     let main_language = SupportedLanguage::from(reader.read_u8("main language")?);
     let creator_notes = match revision {
         MapInfoRevision::V10024 => None,
@@ -252,9 +249,7 @@ fn encode_map_info(
     writer.write_u32_be(file_info.timestamp);
     writer.write_byte_from_bool(file_info.start_with_hero_in_first_castle);
     writer.write_u32_be(file_info.version.to_u32());
-    writer.write_u32_be(file_info.world_date.day);
-    writer.write_u32_be(file_info.world_date.week);
-    writer.write_u32_be(file_info.world_date.month);
+    encode_world_date(writer, file_info.world_date);
     writer.write_u8(u8::from(file_info.main_language));
 
     if revision == MapInfoRevision::V10033 {

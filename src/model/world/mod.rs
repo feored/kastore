@@ -4,15 +4,19 @@ pub mod heroes;
 pub mod kingdoms;
 pub mod tile;
 pub mod timed_events;
+pub mod ultimate_artifact;
 
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
 use crate::SaveString;
+use crate::model::header::map_info::WorldDate;
 use crate::model::header::player::PlayerColor;
 use crate::model::world::captured_objects::CapturedObject;
+use crate::model::world::heroes::id::HeroID;
 use crate::model::world::kingdoms::KINGDOM_SLOT_COUNT;
 use crate::model::world::timed_events::TimedEvent;
+use crate::model::world::ultimate_artifact::UltimateArtifact;
 
 /// Decoded fheroes2 `World` section.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,6 +39,11 @@ pub struct World {
     pub timed_events: Vec<TimedEvent>,
     /// Decoded captured object map keyed by tile index.
     pub captured_objects: BTreeMap<i32, CapturedObject>,
+    /// Decoded ultimate artifact state.
+    pub ultimate_artifact: UltimateArtifact,
+    pub world_date: WorldDate,
+    pub hero_id_as_win_condition: HeroID,
+    pub hero_id_as_lose_condition: HeroID,
 }
 
 impl Default for World {
@@ -49,6 +58,10 @@ impl Default for World {
             custom_rumors: Vec::new(),
             timed_events: Vec::new(),
             captured_objects: BTreeMap::new(),
+            ultimate_artifact: UltimateArtifact::default(),
+            world_date: WorldDate::default(),
+            hero_id_as_win_condition: HeroID::Unknown(0),
+            hero_id_as_lose_condition: HeroID::Unknown(0),
         }
     }
 }
@@ -119,6 +132,10 @@ impl Display for World {
             for timed_event in &self.timed_events {
                 writeln!(f, "  - {timed_event}")?;
             }
+        }
+
+        if self.ultimate_artifact.is_meaningful() {
+            writeln!(f, "ultimate_artifact: {}", self.ultimate_artifact)?;
         }
 
         if !self.castles.is_empty() {
