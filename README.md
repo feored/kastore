@@ -1,27 +1,52 @@
 ## Kastore
 
-A Rust library for reading and writing [fheroes2](https://github.com/ihhub/fheroes2) save files.
+Rust library for reading and writing [fheroes2](https://github.com/ihhub/fheroes2) save files.
 
-Still early and incomplete.
+Decodes into a typed model and re-encodes from it.
 
-### Status
+### Features
 
-Currently supported:
+-   Supports versions `10032` and `10033`
+-	All sections of the save format, including:
+	-   header / map info
+	-   container (compression + wrapper)
+	-   settings
+	-   game-over result
+	-   world (heroes, castles, kingdoms, tiles, objects)
+-	Basic validation (e.g heroes/castle data in kingdoms)
+-	Strict/Permissive modes 
 
-- save versions `10032` and `10033`
-- outer save container decoding/encoding
-- header / map-info decoding/encoding
-- compressed body preservation
-- partial world decoding, including tile data
+
+### Parsing
+
+Strict by default:
+
+``` rust
+let save = kastore::load(&bytes)?;
+```
+
+Permissive mode (diagnostics):
+
+``` rust
+use kastore::{load_with_options, LoadOptions, ParseMode};
+
+let report = load_with_options(&bytes, &LoadOptions::permissive())?;
+let save = report.value;
+```
+
+Permissive mode reports issues but still fails on invalid structure.
 
 ### Usage
 
-```rust
+``` rust
 let bytes = std::fs::read("save.sav")?;
 let save = kastore::load(&bytes)?;
-
-println!("{save}");
 
 let encoded = kastore::save(&save)?;
 std::fs::write("save.sav", encoded)?;
 ```
+
+### Notes
+
+-   encoding is model-driven, not byte-preserving
+-   API not yet stable
