@@ -12,14 +12,13 @@ use crate::model::settings::{
 };
 use crate::version::MapInfoRevision;
 
-pub(crate) fn decode_prefix(
-    bytes: &[u8],
+pub(crate) fn decode(
+    reader: &mut Reader<'_>,
     map_info_revision: MapInfoRevision,
-) -> std::result::Result<(Settings, usize), Error> {
-    let mut reader = Reader::with_context(bytes, ParseSection::Settings);
-
+) -> std::result::Result<Settings, Error> {
+    reader.set_section(ParseSection::Settings);
     let loaded_file_language = reader.read_save_string("settings loaded file language")?;
-    let current_map_info = decode_map_info(&mut reader, map_info_revision)?;
+    let current_map_info = decode_map_info(reader, map_info_revision)?;
     reader.set_section(ParseSection::Settings);
 
     let game_difficulty = Difficulty::from_i32(reader.read_i32_be("settings game difficulty")?);
@@ -56,20 +55,17 @@ pub(crate) fn decode_prefix(
         });
     }
 
-    Ok((
-        Settings {
-            loaded_file_language,
-            current_map_info,
-            game_difficulty,
-            game_type,
-            players: SettingsPlayers {
-                colors,
-                current_player_color,
-                entries,
-            },
+    Ok(Settings {
+        loaded_file_language,
+        current_map_info,
+        game_difficulty,
+        game_type,
+        players: SettingsPlayers {
+            colors,
+            current_player_color,
+            entries,
         },
-        reader.position(),
-    ))
+    })
 }
 
 pub(crate) fn encode(

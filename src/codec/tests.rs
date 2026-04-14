@@ -19,6 +19,7 @@ fn save_round_trips_loaded_fixture() {
     assert_eq!(reloaded.header, save_game.header);
     assert_eq!(reloaded.world, save_game.world);
     assert_eq!(reloaded.settings, save_game.settings);
+    assert_eq!(reloaded.game_over_result, save_game.game_over_result);
     assert_eq!(
         reloaded.compression_header.raw_size as usize,
         reloaded.body.len()
@@ -138,8 +139,10 @@ fn save_display_includes_decoded_castles() {
 
 #[test]
 fn save_rejects_too_many_player_slots_without_panicking() {
-    let mut save_game = SaveGame::default();
-    save_game.source_version = SaveVersion::FORMAT_VERSION_1111_RELEASE;
+    let mut save_game = SaveGame {
+        source_version: SaveVersion::FORMAT_VERSION_1111_RELEASE,
+        ..SaveGame::default()
+    };
     save_game.header.file_info.player_slots = vec![PlayerSlotInfo::default(); 256];
 
     let display = save_game.to_string();
@@ -169,18 +172,21 @@ fn save_as_rejects_unsupported_target_version() {
 }
 
 #[test]
-fn save_as_rejects_version_conversion_for_now() {
-    let save_game = SaveGame {
-        source_version: SaveVersion::FORMAT_VERSION_1111_RELEASE,
-        ..SaveGame::default()
-    };
+fn save_as_converts_between_supported_versions() {
+    let bytes = fs::read("tests/saves/10032/Guardian_War_0009.sav").unwrap();
+    let save_game = load(&bytes).unwrap();
 
-    let error = save_as(&save_game, SaveVersion::FORMAT_VERSION_1150_RELEASE).unwrap_err();
+    let encoded = save_as(&save_game, SaveVersion::FORMAT_VERSION_1150_RELEASE).unwrap();
+    let reloaded = load(&encoded).unwrap();
 
     assert_eq!(
-        error,
-        Error::NotImplemented {
-            feature: "save version conversion",
-        }
+        reloaded.source_version,
+        SaveVersion::FORMAT_VERSION_1150_RELEASE
+    );
+    assert_eq!(reloaded.world, save_game.world);
+    assert_eq!(reloaded.game_over_result, save_game.game_over_result);
+    assert_eq!(
+        reloaded.settings.players, save_game.settings.players,
+        "settings players should survive conversion unchanged"
     );
 }

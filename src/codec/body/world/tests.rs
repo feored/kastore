@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use super::*;
 use crate::SaveString;
+use crate::internal::reader::Reader;
 use crate::internal::writer::Writer;
 use crate::model::header::map_info::WorldDate;
 use crate::model::header::player::{PlayerColor, PlayerColorsSet, Race};
@@ -99,12 +100,23 @@ fn castle_index(width: i32, height: i32, castle: &Castle) -> i32 {
     super::validation::castle_index_from_map_position(width, height, castle).unwrap()
 }
 
+fn decode_world(bytes: &[u8]) -> World {
+    let mut reader = Reader::with_context(bytes, crate::ParseSection::World);
+    decode(&mut reader).unwrap()
+}
+
+fn encode_world(world: &World) -> std::result::Result<Vec<u8>, Error> {
+    let mut writer = Writer::new();
+    encode_into(&mut writer, world)?;
+    Ok(writer.into_bytes())
+}
+
 #[test]
 fn decode_world_reads_tiles_and_filters_placeholder_heroes() {
     let tile = sample_tile();
     let bytes = world_bytes_with_placeholder_heroes(2, 1, std::slice::from_ref(&tile));
 
-    let world = decode_prefix(&bytes).unwrap().0;
+    let world = decode_world(&bytes);
 
     assert_eq!(world.width, 2);
     assert_eq!(world.height, 1);
@@ -127,29 +139,31 @@ fn decode_world_reads_tiles_and_filters_placeholder_heroes() {
 fn encode_world_round_trips_empty_semantic_world() {
     let world = World::default();
 
-    let encoded = encode(&world).unwrap();
-    let decoded = decode_prefix(&encoded).unwrap().0;
+    let encoded = encode_world(&world).unwrap();
+    let decoded = decode_world(&encoded);
 
     assert_eq!(decoded, world);
 }
 
 #[test]
 fn world_display_includes_world_extras() {
-    let mut world = World::default();
-    world.custom_rumors = vec![SaveString::from("Hidden treasure in the marshes")];
-    world.timed_events = vec![sample_timed_event()];
-    world.captured_objects = BTreeMap::from([(
-        4,
-        CapturedObject {
-            object_type: 54,
-            color: PlayerColor::Blue,
-            guardians: Troop {
-                monster: MonsterType::Griffin,
-                count: 27,
+    let world = World {
+        custom_rumors: vec![SaveString::from("Hidden treasure in the marshes")],
+        timed_events: vec![sample_timed_event()],
+        captured_objects: BTreeMap::from([(
+            4,
+            CapturedObject {
+                object_type: 54,
+                color: PlayerColor::Blue,
+                guardians: Troop {
+                    monster: MonsterType::Griffin,
+                    count: 27,
+                },
             },
-        },
-    )]);
-    world.map_objects = sample_map_objects();
+        )]),
+        map_objects: sample_map_objects(),
+        ..World::default()
+    };
 
     let display = world.to_string();
 
@@ -185,8 +199,8 @@ fn encode_world_round_trips_semantic_heroes_in_slot_order() {
         seed: 0,
     };
 
-    let encoded = encode(&world).unwrap();
-    let decoded = decode_prefix(&encoded).unwrap().0;
+    let encoded = encode_world(&world).unwrap();
+    let decoded = decode_world(&encoded);
 
     assert_eq!(
         decoded,
@@ -242,8 +256,8 @@ fn encode_world_round_trips_semantic_castles() {
         seed: 0,
     };
 
-    let encoded = encode(&world).unwrap();
-    let decoded = decode_prefix(&encoded).unwrap().0;
+    let encoded = encode_world(&world).unwrap();
+    let decoded = decode_world(&encoded);
 
     assert_eq!(decoded, world);
 }
@@ -277,7 +291,7 @@ fn encode_world_rejects_duplicate_hero_ids() {
     };
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "world heroes",
             message: "hero ids must be unique",
@@ -310,7 +324,7 @@ fn encode_world_rejects_kingdom_hero_color_mismatch() {
     };
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom heroes",
             message: "kingdom hero references must match the referenced hero color",
@@ -383,8 +397,8 @@ fn encode_world_round_trips_semantic_kingdom_details() {
         seed: 0xDEAD_BEEF,
     };
 
-    let encoded = encode(&world).unwrap();
-    let decoded = decode_prefix(&encoded).unwrap().0;
+    let encoded = encode_world(&world).unwrap();
+    let decoded = decode_world(&encoded);
 
     assert_eq!(decoded, world);
 }
@@ -395,7 +409,7 @@ fn encode_world_rejects_invalid_kingdom_puzzle_revealed_tiles() {
     world.kingdoms[0].puzzle.revealed_tiles = vec![b'0'; PUZZLE_REVEALED_TILES_COUNT - 1];
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom puzzle revealed tiles",
             message: "revealed tiles must be 48 ASCII '0'/'1' bytes",
@@ -409,7 +423,7 @@ fn encode_world_rejects_invalid_kingdom_puzzle_zone_size() {
     world.kingdoms[0].puzzle.zone1_order.pop();
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom puzzle zone1",
             message: "zone must contain exactly 24 tiles",
@@ -423,7 +437,7 @@ fn encode_world_rejects_kingdom_slot_color_mismatch() {
     world.kingdoms[1].color = PlayerColor::Blue;
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom colors",
             message: "kingdom slot colors must match fheroes2 slot order or be None for inactive slots",
@@ -455,7 +469,7 @@ fn encode_world_rejects_missing_kingdom_hero_membership() {
     };
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom heroes",
             message: "every non-neutral hero must appear in exactly one kingdom hero list",
@@ -488,7 +502,7 @@ fn encode_world_rejects_kingdom_castle_color_mismatch() {
     };
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom castles",
             message: "kingdom castle references must match the referenced castle color",
@@ -520,7 +534,7 @@ fn encode_world_rejects_unknown_kingdom_castle_ref() {
     };
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "kingdom castles",
             message: "kingdom castle references must point to decoded castles",
@@ -561,7 +575,7 @@ fn encode_world_rejects_map_object_uid_mismatch() {
     };
 
     assert_eq!(
-        encode(&world),
+        encode_world(&world),
         Err(Error::InvalidModel {
             field: "world map objects",
             message: "map object key uid must match object body uid",

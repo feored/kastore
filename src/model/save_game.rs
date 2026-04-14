@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use crate::version::SaveVersion;
 
+use super::campaign_save_data::CampaignSaveData;
+use super::game_over_result::GameOverResult;
 use super::header::SaveHeader;
 use super::settings::Settings;
 use super::world::World;
@@ -34,6 +36,10 @@ pub struct SaveGame {
     pub world: World,
     /// Decoded settings data from the body.
     pub settings: Settings,
+    /// Decoded game-over result from the body.
+    pub game_over_result: GameOverResult,
+    /// Decoded campaign save data from the body when game type is campaign.
+    pub campaign_save_data: Option<CampaignSaveData>,
 }
 
 impl Display for SaveGame {
@@ -71,6 +77,13 @@ impl Display for SaveGame {
         writeln!(f, "world:")?;
         write!(f, "{}", self.world)?;
         writeln!(f, "settings:")?;
-        write!(f, "{}", self.settings)
+        write!(f, "{}", self.settings)?;
+        writeln!(f, "game over result:")?;
+        write!(f, "{}", self.game_over_result)?;
+        if let Some(campaign_save_data) = &self.campaign_save_data {
+            writeln!(f, "campaign save data:")?;
+            write!(f, "{}", campaign_save_data)?;
+        }
+        Ok(())
     }
 }

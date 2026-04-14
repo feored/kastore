@@ -384,7 +384,7 @@ fn encode_placeholder_hero(writer: &mut Writer) -> std::result::Result<(), Error
     encode_hero(writer, &placeholder)
 }
 
-fn hero_slots<'a>(heroes: &'a [Hero]) -> std::result::Result<Vec<Option<&'a Hero>>, Error> {
+fn hero_slots(heroes: &[Hero]) -> std::result::Result<Vec<Option<&Hero>>, Error> {
     let mut slots = vec![None; usize::try_from(EXPECTED_HEROES_COUNT).unwrap()];
 
     for hero in heroes {

@@ -20,34 +20,29 @@ use crate::model::world::heroes::id::HeroID;
 use crate::model::world::tile::Tile;
 use validation::validate_kingdoms;
 
-/// Decode the typed `World` prefix from a decompressed body.
-///
-/// The returned byte count is the number of bytes consumed from the front of
-/// `bytes`, allowing callers to preserve any trailing opaque sections that are
-/// not yet part of the semantic model.
-pub(crate) fn decode_prefix(bytes: &[u8]) -> std::result::Result<(World, usize), Error> {
-    let mut reader = Reader::with_context(bytes, ParseSection::World);
+pub(crate) fn decode(reader: &mut Reader<'_>) -> std::result::Result<World, Error> {
+    reader.set_section(ParseSection::World);
     let width: i32 = reader.read_i32_be("world width")?;
     let height: i32 = reader.read_i32_be("world height")?;
     let tiles_count: u32 = reader.read_u32_be("world tiles count")?;
     let mut tiles: Vec<Tile> = Vec::new();
     for _ in 0..tiles_count {
-        tiles.push(tile::decode(&mut reader)?);
+        tiles.push(tile::decode(reader)?);
     }
-    let heroes = heroes::decode(&mut reader)?;
-    let castles = castles::decode(&mut reader)?;
+    let heroes = heroes::decode(reader)?;
+    let castles = castles::decode(reader)?;
     let kingdoms_offset = reader.position();
-    let kingdoms = kingdoms::decode(&mut reader)?;
-    let custom_rumors = custom_rumors::decode(&mut reader)?;
-    let timed_events = timed_events::decode(&mut reader)?;
-    let captured_objects = captured_objects::decode(&mut reader)?;
-    let ultimate_artifact = ultimate_artifact::decode(&mut reader)?;
-    let world_date = decode_world_date(&mut reader)?;
+    let kingdoms = kingdoms::decode(reader)?;
+    let custom_rumors = custom_rumors::decode(reader)?;
+    let timed_events = timed_events::decode(reader)?;
+    let captured_objects = captured_objects::decode(reader)?;
+    let ultimate_artifact = ultimate_artifact::decode(reader)?;
+    let world_date = decode_world_date(reader)?;
     let hero_id_as_win_condition =
         HeroID::from_i32(reader.read_i32_be("hero id as win condition")?);
     let hero_id_as_lose_condition =
         HeroID::from_i32(reader.read_i32_be("hero id as loss condition")?);
-    let map_objects = map_objects::decode(&mut reader)?;
+    let map_objects = map_objects::decode(reader)?;
     let seed = reader.read_u32_be("world seed")?;
     let world = World {
         width,
@@ -69,11 +64,10 @@ pub(crate) fn decode_prefix(bytes: &[u8]) -> std::result::Result<(World, usize),
     validate_kingdoms(&world)
         .map_err(|issue| reader.invalid_value(issue.field, kingdoms_offset, issue.message))?;
 
-    Ok((world, reader.position()))
+    Ok(world)
 }
 
-pub(crate) fn encode(world: &World) -> std::result::Result<Vec<u8>, Error> {
-    let mut writer = Writer::new();
+pub(crate) fn encode_into(writer: &mut Writer, world: &World) -> std::result::Result<(), Error> {
     writer.write_i32_be(world.width);
     writer.write_i32_be(world.height);
     writer.write_u32_be(
@@ -84,27 +78,27 @@ pub(crate) fn encode(world: &World) -> std::result::Result<Vec<u8>, Error> {
     );
 
     for tile in &world.tiles {
-        tile::encode(&mut writer, tile)?;
+        tile::encode(writer, tile)?;
     }
 
-    heroes::encode(&mut writer, &world.heroes)?;
-    castles::encode(&mut writer, &world.castles)?;
+    heroes::encode(writer, &world.heroes)?;
+    castles::encode(writer, &world.castles)?;
     validate_kingdoms(world).map_err(|issue| Error::InvalidModel {
         field: issue.field,
         message: issue.message,
     })?;
-    kingdoms::encode(&mut writer, &world.kingdoms)?;
-    custom_rumors::encode(&mut writer, &world.custom_rumors)?;
-    timed_events::encode(&mut writer, &world.timed_events)?;
-    captured_objects::encode(&mut writer, &world.captured_objects)?;
-    ultimate_artifact::encode(&mut writer, &world.ultimate_artifact)?;
-    encode_world_date(&mut writer, world.world_date);
+    kingdoms::encode(writer, &world.kingdoms)?;
+    custom_rumors::encode(writer, &world.custom_rumors)?;
+    timed_events::encode(writer, &world.timed_events)?;
+    captured_objects::encode(writer, &world.captured_objects)?;
+    ultimate_artifact::encode(writer, &world.ultimate_artifact)?;
+    encode_world_date(writer, world.world_date);
     writer.write_i32_be(world.hero_id_as_win_condition.to_i32());
     writer.write_i32_be(world.hero_id_as_lose_condition.to_i32());
-    map_objects::encode(&mut writer, &world.map_objects)?;
+    map_objects::encode(writer, &world.map_objects)?;
     writer.write_u32_be(world.seed);
 
-    Ok(writer.into_bytes())
+    Ok(())
 }
 
 pub(super) fn decode_funds(reader: &mut Reader<'_>) -> std::result::Result<Funds, Error> {
