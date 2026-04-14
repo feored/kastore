@@ -20,10 +20,6 @@ use crate::model::world::heroes::id::HeroID;
 use crate::model::world::tile::Tile;
 use validation::validate_kingdoms;
 
-pub(crate) fn decode(bytes: &[u8]) -> std::result::Result<World, Error> {
-    Ok(decode_prefix(bytes)?.0)
-}
-
 /// Decode the typed `World` prefix from a decompressed body.
 ///
 /// The returned byte count is the number of bytes consumed from the front of

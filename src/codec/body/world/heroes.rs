@@ -73,7 +73,7 @@ fn decode_hero(reader: &mut Reader<'_>) -> std::result::Result<Hero, Error> {
 
     Ok(Hero {
         base,
-        name: name,
+        name,
         color_base,
         experience,
         secondary_skills,

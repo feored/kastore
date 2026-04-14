@@ -59,7 +59,7 @@ pub enum Difficulty {
     Expert,
     Impossible,
     /// Preserved raw value not known by this crate.
-    Unknown(u8),
+    Unknown(i32),
 }
 
 impl Difficulty {
@@ -71,12 +71,36 @@ impl Difficulty {
             2 => Difficulty::Hard,
             3 => Difficulty::Expert,
             4 => Difficulty::Impossible,
-            other => Difficulty::Unknown(other),
+            other => Difficulty::Unknown(other as i32),
         }
     }
 
     /// Return the raw save byte.
     pub const fn to_byte(self) -> u8 {
+        match self {
+            Difficulty::Easy => 0,
+            Difficulty::Normal => 1,
+            Difficulty::Hard => 2,
+            Difficulty::Expert => 3,
+            Difficulty::Impossible => 4,
+            Difficulty::Unknown(other) => other as u8,
+        }
+    }
+
+    /// Build from the raw i32 wire value used in the settings body.
+    pub const fn from_i32(value: i32) -> Self {
+        match value {
+            0 => Difficulty::Easy,
+            1 => Difficulty::Normal,
+            2 => Difficulty::Hard,
+            3 => Difficulty::Expert,
+            4 => Difficulty::Impossible,
+            other => Difficulty::Unknown(other),
+        }
+    }
+
+    /// Return the raw i32 wire value used in the settings body.
+    pub const fn to_i32(self) -> i32 {
         match self {
             Difficulty::Easy => 0,
             Difficulty::Normal => 1,

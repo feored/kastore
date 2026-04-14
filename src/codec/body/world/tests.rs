@@ -104,7 +104,7 @@ fn decode_world_reads_tiles_and_filters_placeholder_heroes() {
     let tile = sample_tile();
     let bytes = world_bytes_with_placeholder_heroes(2, 1, std::slice::from_ref(&tile));
 
-    let world = decode(&bytes).unwrap();
+    let world = decode_prefix(&bytes).unwrap().0;
 
     assert_eq!(world.width, 2);
     assert_eq!(world.height, 1);
@@ -128,7 +128,7 @@ fn encode_world_round_trips_empty_semantic_world() {
     let world = World::default();
 
     let encoded = encode(&world).unwrap();
-    let decoded = decode(&encoded).unwrap();
+    let decoded = decode_prefix(&encoded).unwrap().0;
 
     assert_eq!(decoded, world);
 }
@@ -186,7 +186,7 @@ fn encode_world_round_trips_semantic_heroes_in_slot_order() {
     };
 
     let encoded = encode(&world).unwrap();
-    let decoded = decode(&encoded).unwrap();
+    let decoded = decode_prefix(&encoded).unwrap().0;
 
     assert_eq!(
         decoded,
@@ -243,7 +243,7 @@ fn encode_world_round_trips_semantic_castles() {
     };
 
     let encoded = encode(&world).unwrap();
-    let decoded = decode(&encoded).unwrap();
+    let decoded = decode_prefix(&encoded).unwrap().0;
 
     assert_eq!(decoded, world);
 }
@@ -384,7 +384,7 @@ fn encode_world_round_trips_semantic_kingdom_details() {
     };
 
     let encoded = encode(&world).unwrap();
-    let decoded = decode(&encoded).unwrap();
+    let decoded = decode_prefix(&encoded).unwrap().0;
 
     assert_eq!(decoded, world);
 }

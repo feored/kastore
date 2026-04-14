@@ -132,7 +132,7 @@ pub(crate) fn encode_file(
     Ok(writer.into_bytes())
 }
 
-fn decode_map_info(
+pub(crate) fn decode_map_info(
     reader: &mut Reader<'_>,
     revision: MapInfoRevision,
 ) -> std::result::Result<MapInfo, Error> {
@@ -211,7 +211,7 @@ fn decode_map_info(
     })
 }
 
-fn encode_map_info(
+pub(crate) fn encode_map_info(
     writer: &mut Writer,
     file_info: &MapInfo,
     revision: MapInfoRevision,

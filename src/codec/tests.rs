@@ -18,6 +18,7 @@ fn save_round_trips_loaded_fixture() {
     assert_eq!(reloaded.source_version, save_game.source_version);
     assert_eq!(reloaded.header, save_game.header);
     assert_eq!(reloaded.world, save_game.world);
+    assert_eq!(reloaded.settings, save_game.settings);
     assert_eq!(
         reloaded.compression_header.raw_size as usize,
         reloaded.body.len()

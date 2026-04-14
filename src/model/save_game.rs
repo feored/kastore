@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::version::SaveVersion;
 
 use super::header::SaveHeader;
+use super::settings::Settings;
 use super::world::World;
 
 /// Metadata stored before the compressed save body.
@@ -31,6 +32,8 @@ pub struct SaveGame {
     pub body: Vec<u8>,
     /// Decoded world data from the body.
     pub world: World,
+    /// Decoded settings data from the body.
+    pub settings: Settings,
 }
 
 impl Display for SaveGame {
@@ -39,7 +42,6 @@ impl Display for SaveGame {
         writeln!(f, "requires_pol: {}", self.header.requires_pol)?;
         write!(f, "{}", self.header.file_info)?;
         writeln!(f, "game type: {}", self.header.game_type)?;
-        writeln!(f, "body bytes (decompressed): {}", self.body.len())?;
         writeln!(
             f,
             "body wrapper raw size: {}",
@@ -65,6 +67,10 @@ impl Display for SaveGame {
             "body has end marker 0xFF03: {}",
             self.body.ends_with(&[0xFF, 0x03])
         )?;
-        write!(f, "{}", self.world)
+        writeln!(f, "body bytes (decompressed): {}", self.body.len())?;
+        writeln!(f, "world:")?;
+        write!(f, "{}", self.world)?;
+        writeln!(f, "settings:")?;
+        write!(f, "{}", self.settings)
     }
 }
