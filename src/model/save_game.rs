@@ -30,8 +30,6 @@ pub struct SaveGame {
     pub header: SaveHeader,
     /// Metadata from the compressed body wrapper in the save file.
     pub compression_header: BodyCompressionHeader,
-    /// Decompressed gameplay body bytes.
-    pub body: Vec<u8>,
     /// Decoded world data from the body.
     pub world: World,
     /// Decoded settings data from the body.
@@ -68,12 +66,6 @@ impl Display for SaveGame {
             "body wrapper reserved: {}",
             self.compression_header.reserved
         )?;
-        writeln!(
-            f,
-            "body has end marker 0xFF03: {}",
-            self.body.ends_with(&[0xFF, 0x03])
-        )?;
-        writeln!(f, "body bytes (decompressed): {}", self.body.len())?;
         writeln!(f, "world:")?;
         write!(f, "{}", self.world)?;
         writeln!(f, "settings:")?;

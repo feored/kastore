@@ -26,7 +26,6 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
             game_type: parts.game_type,
         },
         compression_header: parts.body_compression_header,
-        body: parts.body,
         world: sections.world,
         settings: sections.settings,
         game_over_result: sections.game_over_result,

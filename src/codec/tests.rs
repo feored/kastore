@@ -20,10 +20,6 @@ fn save_round_trips_loaded_fixture() {
     assert_eq!(reloaded.world, save_game.world);
     assert_eq!(reloaded.settings, save_game.settings);
     assert_eq!(reloaded.game_over_result, save_game.game_over_result);
-    assert_eq!(
-        reloaded.compression_header.raw_size as usize,
-        reloaded.body.len()
-    );
     assert_eq!(reloaded.compression_header.compression_format_version, 0);
     assert_eq!(reloaded.compression_header.reserved, 0);
     assert!(reloaded.compression_header.zip_size > 0);
