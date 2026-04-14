@@ -5,6 +5,13 @@ use std::fmt::Display;
 pub struct GameType(i32);
 
 impl GameType {
+    const KNOWN_BITS: i32 = Self::STANDARD.0
+        | Self::CAMPAIGN.0
+        | Self::HOTSEAT.0
+        | Self::NETWORK.0
+        | Self::BATTLE_ONLY.0
+        | Self::LOAD_FILE.0;
+
     pub const MENU: Self = Self(0);
     pub const STANDARD: Self = Self(0x01);
     pub const CAMPAIGN: Self = Self(0x02);
@@ -29,6 +36,11 @@ impl GameType {
         (self.0 & flags.0) == flags.0
     }
 
+    /// Return any bits not currently recognized by this crate.
+    pub const fn unknown_bits(self) -> i32 {
+        self.0 & !Self::KNOWN_BITS
+    }
+
     /// Set all bits in `flags`.
     pub fn insert(&mut self, flags: Self) {
         self.0 |= flags.0;
@@ -47,13 +59,6 @@ impl Display for GameType {
         }
 
         let mut parts = Vec::new();
-        let known_bits = Self::STANDARD.0
-            | Self::CAMPAIGN.0
-            | Self::HOTSEAT.0
-            | Self::NETWORK.0
-            | Self::BATTLE_ONLY.0
-            | Self::LOAD_FILE.0;
-
         if self.contains(Self::STANDARD) {
             parts.push("Standard");
         }
@@ -73,7 +78,7 @@ impl Display for GameType {
             parts.push("LoadFile");
         }
 
-        let unknown_bits = self.0 & !known_bits;
+        let unknown_bits = self.unknown_bits();
         if unknown_bits != 0 {
             return write!(
                 f,

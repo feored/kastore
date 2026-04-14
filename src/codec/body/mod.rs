@@ -1,4 +1,5 @@
 use crate::Error;
+use crate::codec::parse::{DiagnosticKind, ParseContext};
 use crate::internal::error::ParseSection;
 use crate::internal::reader::Reader;
 use crate::model::campaign_save_data::CampaignSaveData;
@@ -26,6 +27,7 @@ pub(crate) fn decode_sections(
     body_bytes: &[u8],
     map_info_revision: MapInfoRevision,
     game_type: GameType,
+    parse_context: &mut ParseContext,
 ) -> std::result::Result<DecodedSections, Error> {
     let mut reader = Reader::with_context(body_bytes, ParseSection::Body);
 
@@ -51,11 +53,18 @@ pub(crate) fn decode_sections(
     }
 
     if reader.position() != body_bytes.len() {
-        return Err(reader.invalid_value(
-            "body",
-            reader.position(),
+        parse_context.warn(
+            DiagnosticKind::TrailingBytes,
+            ParseSection::Body,
+            Some("body"),
+            Some(reader.position()),
             "unexpected trailing bytes after body end marker",
-        ));
+            Some(reader.invalid_value(
+                "body",
+                reader.position(),
+                "unexpected trailing bytes after body end marker",
+            )),
+        )?;
     }
 
     Ok(DecodedSections {

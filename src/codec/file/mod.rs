@@ -21,6 +21,8 @@ use crate::model::header::supported_language::SupportedLanguage;
 use crate::model::save_game::BodyCompressionHeader;
 use crate::version::{MapInfoRevision, VersionProfile};
 
+use super::parse::{DiagnosticKind, ParseContext};
+
 pub(crate) const SAVE_FILE_MAGIC_NUMBER: u16 = 0xFF03;
 pub(crate) const REQUIRES_POL: u16 = 0x4000;
 const COMPRESSION_FORMAT_VERSION_0: u16 = 0;
@@ -90,6 +92,7 @@ pub(crate) fn detect_save_version(bytes: &[u8]) -> std::result::Result<SaveVersi
 pub(crate) fn decode_file(
     bytes: &[u8],
     profile: VersionProfile,
+    parse_context: &mut ParseContext,
 ) -> std::result::Result<FileParts, Error> {
     let mut reader = Reader::with_context(bytes, ParseSection::Container);
     expect_save_file_magic(&mut reader)?;
@@ -106,8 +109,20 @@ pub(crate) fn decode_file(
     reader.set_section(ParseSection::Header);
     let requires_pol = (reader.read_u16_be("flags")? & REQUIRES_POL) != 0;
     let file_info = decode_map_info(&mut reader, profile.map_info_revision)?;
+    let game_type_offset = reader.position();
     let game_type = GameType::from_i32(reader.read_i32_be("game type")?);
-    let (body_compression_header, body) = decode_body_bytes(&mut reader)?;
+    let unknown_bits = game_type.unknown_bits();
+    if unknown_bits != 0 {
+        parse_context.warn(
+            DiagnosticKind::UnknownBitFlags,
+            ParseSection::Header,
+            Some("game type"),
+            Some(game_type_offset),
+            format!("unknown game type bits 0x{unknown_bits:08X} preserved in parsed model"),
+            None,
+        )?;
+    }
+    let (body_compression_header, body) = decode_body_bytes(&mut reader, parse_context)?;
 
     Ok(FileParts {
         requires_pol,
@@ -264,6 +279,7 @@ pub(crate) fn encode_map_info(
 
 fn decode_body_bytes(
     reader: &mut Reader<'_>,
+    parse_context: &mut ParseContext,
 ) -> std::result::Result<(BodyCompressionHeader, Vec<u8>), Error> {
     reader.set_section(ParseSection::Body);
 
@@ -309,12 +325,19 @@ fn decode_body_bytes(
     let reserved_offset = reader.position();
     let reserved = reader.read_u16_be("body unused")?;
     if reserved != RESERVED_BYTES_0 {
-        return Err(reader.unexpected_value(
-            "body unused",
-            reserved_offset,
-            "0",
-            reserved.to_string(),
-        ));
+        parse_context.warn(
+            DiagnosticKind::UnexpectedReservedValue,
+            ParseSection::Body,
+            Some("body unused"),
+            Some(reserved_offset),
+            format!("expected 0, got {reserved}"),
+            Some(reader.unexpected_value(
+                "body unused",
+                reserved_offset,
+                "0",
+                reserved.to_string(),
+            )),
+        )?;
     }
 
     let zlib_bytes_offset = reader.position();

@@ -14,6 +14,7 @@ use crate::model::header::supported_language::SupportedLanguage;
 use crate::version::{SaveVersion, profile_for};
 use crate::{ParseError, ParseErrorKind, ParseSection};
 
+use super::super::parse::{LoadOptions, ParseContext};
 use super::{decode_file, encode_file};
 
 fn push_string(bytes: &mut Vec<u8>, value: &[u8]) {
@@ -102,7 +103,8 @@ fn push_body_chunk(bytes: &mut Vec<u8>, body: &[u8]) {
 
 fn decode(bytes: &[u8], save_version: SaveVersion) -> Result<super::FileParts, crate::Error> {
     let profile = profile_for(save_version).expect("supported test version");
-    decode_file(bytes, profile)
+    let mut parse_context = ParseContext::new(LoadOptions::strict().parse_mode);
+    decode_file(bytes, profile, &mut parse_context)
 }
 
 fn decode_then_encode(bytes: &[u8], save_version: SaveVersion) -> Result<Vec<u8>, crate::Error> {

@@ -1,24 +1,41 @@
 pub(crate) mod body;
 mod file;
+mod parse;
 mod world_date;
 
 use crate::Error;
 use crate::model::header::SaveHeader;
 use crate::model::save_game::SaveGame;
 use crate::version::{SaveVersion, profile_for};
+use parse::ParseContext;
+pub use parse::{Diagnostic, DiagnosticKind, LoadOptions, ParseMode, ParseReport, Severity};
 
 /// Decode a supported fheroes2 save file.
 pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
+    Ok(load_with_options(bytes, &LoadOptions::strict())?.value)
+}
+
+/// Decode a supported fheroes2 save file and return parse diagnostics.
+pub fn load_with_options(
+    bytes: &[u8],
+    options: &LoadOptions,
+) -> std::result::Result<ParseReport<SaveGame>, Error> {
+    let mut parse_context = ParseContext::new(options.parse_mode);
     let save_version = file::detect_save_version(bytes)?;
     let Some(profile) = profile_for(save_version) else {
         return Err(Error::UnsupportedSaveVersion {
             version: save_version.as_u16(),
         });
     };
-    let parts = file::decode_file(bytes, profile)?;
-    let sections = body::decode_sections(&parts.body, profile.map_info_revision, parts.game_type)?;
+    let parts = file::decode_file(bytes, profile, &mut parse_context)?;
+    let sections = body::decode_sections(
+        &parts.body,
+        profile.map_info_revision,
+        parts.game_type,
+        &mut parse_context,
+    )?;
 
-    Ok(SaveGame {
+    Ok(parse_context.finish(SaveGame {
         source_version: save_version,
         header: SaveHeader {
             requires_pol: parts.requires_pol,
@@ -30,7 +47,7 @@ pub fn load(bytes: &[u8]) -> std::result::Result<SaveGame, Error> {
         settings: sections.settings,
         game_over_result: sections.game_over_result,
         campaign_save_data: sections.campaign_save_data,
-    })
+    }))
 }
 
 /// Encode a save using its original save format version.
