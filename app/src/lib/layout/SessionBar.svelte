@@ -1,17 +1,18 @@
 <script lang="ts">
   import { openedSaveSession } from '$lib/editor/opened-save.svelte';
+  import Button from '$lib/ui/Button.svelte';
 </script>
 
-<header>
-  <button type="button" disabled={openedSaveSession.isLoading} onclick={() => openedSaveSession.pickAndOpen()}>
+<header class="flex min-h-14 items-center gap-3 border-b border-border bg-panel-muted px-4">
+  <Button type="button" disabled={openedSaveSession.isLoading} onclick={() => openedSaveSession.pickAndOpen()}>
     {openedSaveSession.isLoading ? 'Opening...' : 'Open Save...'}
-  </button>
+  </Button>
 
   {#if openedSaveSession.currentSave}
-    <p>{openedSaveSession.currentSave.source.path}</p>
+    <p class="min-w-0 truncate font-mono text-xs text-muted-foreground">{openedSaveSession.currentSave.source.path}</p>
   {/if}
 
   {#if openedSaveSession.error}
-    <p>{openedSaveSession.error}</p>
+    <p class="ml-auto text-sm text-danger">{openedSaveSession.error}</p>
   {/if}
 </header>

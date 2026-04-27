@@ -9,13 +9,13 @@
   let activeSection = $state<EditorSectionId>('header');
 </script>
 
-<div>
+<div class="grid min-h-screen grid-cols-[13rem_1fr] bg-background text-foreground">
   <Sidebar {activeSection} onSelect={(section) => (activeSection = section)} />
 
-  <main>
+  <main class="min-w-0">
     <SessionBar />
 
-    <div>
+    <div class="p-4">
       {#if openedSaveSession.currentSave}
         {#if activeSection === 'header'}
           <HeaderView save={openedSaveSession.currentSave} />
@@ -23,9 +23,9 @@
           <DiagnosticsView diagnostics={openedSaveSession.currentSave.diagnostics} />
         {/if}
       {:else}
-        <section>
-          <h1>Open a save file</h1>
-          <p>No save opened.</p>
+        <section class="rounded border border-border bg-panel p-4">
+          <h1 class="text-base font-semibold">Open a save file</h1>
+          <p class="mt-1 text-sm text-muted-foreground">No save opened.</p>
         </section>
       {/if}
     </div>
