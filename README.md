@@ -16,7 +16,7 @@ The repository is a Rust workspace with two main parts:
 
 Decoding/encoding of the save file and validation should stay in Kastore.
 
-## Running The App
+## Usage
 
 Install frontend dependencies from the app directory:
 
@@ -25,7 +25,7 @@ cd app
 pnpm install
 ```
 
-Start the desktop app:
+Start the desktop application:
 
 ```sh
 pnpm tauri dev

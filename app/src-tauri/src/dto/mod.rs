@@ -5,8 +5,32 @@ use ts_rs::TS;
 #[serde(rename_all = "camelCase")]
 pub struct OpenedSaveDto {
     pub source: SourceDto,
-    pub header: HeaderDto,
+    pub scenario: ScenarioDto,
     pub diagnostics: Vec<DiagnosticDto>,
+    pub dirty: bool,
+    pub revision: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioMutationResultDto {
+    pub scenario: ScenarioDto,
+    pub dirty: bool,
+    pub revision: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidationResultDto {
+    pub revision: u64,
+    pub issues: Vec<ValidationIssueDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidationIssueDto {
+    pub field: String,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -19,16 +43,24 @@ pub struct SourceDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-pub struct HeaderDto {
-    pub map_name: SaveStringDto,
-    pub map_filename: SaveStringDto,
-    pub map_description: SaveStringDto,
+pub struct ScenarioDto {
+    pub name: SaveStringDto,
+    pub file_name: SaveStringDto,
+    pub description: SaveStringDto,
     pub width: u16,
     pub height: u16,
     pub difficulty: String,
     pub language: String,
     pub game_type: String,
     pub requires_pol: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum ScenarioMutationDto {
+    SetName { text: String },
+    SetFileName { text: String },
+    SetDescription { text: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

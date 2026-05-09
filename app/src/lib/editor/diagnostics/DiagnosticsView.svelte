@@ -12,12 +12,13 @@
   {:else}
     <div class="grid gap-3">
       {#each diagnostics as diagnostic}
-        {@const kind = diagnostic.kind.toLowerCase()}
+        {@const severity = diagnostic.severity.toLowerCase()}
         <article class="rounded border border-border bg-panel-muted p-3">
           <div class="flex items-center gap-2">
-            <Badge tone={kind.includes('error') ? 'danger' : kind.includes('warn') ? 'warning' : 'muted'}>
-              {diagnostic.kind}
+            <Badge tone={severity.includes('error') ? 'danger' : severity.includes('warn') ? 'warning' : 'muted'}>
+              {diagnostic.severity}
             </Badge>
+            <span class="text-xs text-muted-foreground">{diagnostic.kind}</span>
             <span class="font-mono text-xs text-muted-foreground">
               {diagnostic.section}{diagnostic.field ? `.${diagnostic.field}` : ''}
             </span>

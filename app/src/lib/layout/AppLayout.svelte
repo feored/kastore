@@ -1,12 +1,12 @@
 <script lang="ts">
   import DiagnosticsView from '$lib/editor/diagnostics/DiagnosticsView.svelte';
-  import HeaderView from '$lib/editor/header/HeaderView.svelte';
   import { openedSaveSession } from '$lib/editor/opened-save.svelte';
+  import ScenarioView from '$lib/editor/scenario/ScenarioView.svelte';
   import type { EditorSectionId } from '$lib/editor/sections';
   import SessionBar from '$lib/layout/SessionBar.svelte';
   import Sidebar from '$lib/layout/Sidebar.svelte';
 
-  let activeSection = $state<EditorSectionId>('header');
+  let activeSection = $state<EditorSectionId>('scenario');
 </script>
 
 <div class="grid min-h-screen grid-cols-[13rem_1fr] bg-background text-foreground">
@@ -17,8 +17,8 @@
 
     <div class="p-4">
       {#if openedSaveSession.currentSave}
-        {#if activeSection === 'header'}
-          <HeaderView save={openedSaveSession.currentSave} />
+        {#if activeSection === 'scenario'}
+          <ScenarioView save={openedSaveSession.currentSave} />
         {:else}
           <DiagnosticsView diagnostics={openedSaveSession.currentSave.diagnostics} />
         {/if}

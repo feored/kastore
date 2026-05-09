@@ -15,6 +15,10 @@ pub use version::{SaveVersion, VersionProfile};
 
 pub use model::header::SaveHeader;
 pub use model::header::map_info::MapInfo;
+pub use model::header_sync::{
+    DuplicatedMapInfoTextField, HeaderSyncError, set_duplicated_map_info_text,
+    sync_header_metadata_from_runtime,
+};
 pub use model::save_game::SaveGame;
 pub use model::settings::Settings;
 pub use model::validation::{ValidationIssue, validate_save_game};

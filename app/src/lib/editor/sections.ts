@@ -1,5 +1,5 @@
 export const editorSections = [
-  { id: 'header', label: 'Header' },
+  { id: 'scenario', label: 'Scenario' },
   { id: 'diagnostics', label: 'Diagnostics' },
 ] as const;
 
